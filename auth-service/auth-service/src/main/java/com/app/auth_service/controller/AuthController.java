@@ -2,6 +2,8 @@ package com.app.auth_service.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.auth_service.dto.AuthResponse;
@@ -22,6 +24,9 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
 
+    @Value("${app.default-role}")
+    private String defaultRole;
+
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
@@ -37,13 +42,13 @@ public class AuthController {
 
         RefreshToken token = refreshTokenService.verifyToken(request.getRefreshToken());
 
-        String accessToken = jwtUtil.generateToken(token.getUserId(), "USER");
+        String accessToken = jwtUtil.generateToken(token.getUserId(), defaultRole);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(token.getToken())
                 .userId(token.getUserId().toString())
-                .role("USER")
+                .role(defaultRole)
                 .build();
     }
 

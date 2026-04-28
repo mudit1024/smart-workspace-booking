@@ -1,8 +1,8 @@
 package com.app.auth_service.service.impl;
 
-
-
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.app.auth_service.entity.RefreshToken;
@@ -18,7 +18,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository repository;
 
-    private final long REFRESH_EXPIRATION = 1000 * 60 * 60 * 24; // 1 day
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
 
     @Override
     public RefreshToken createRefreshToken(String userId) {
@@ -26,7 +27,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken token = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
                 .userId(UUID.fromString(userId))
-                .expiryDate(Instant.now().plusMillis(REFRESH_EXPIRATION))
+                .expiryDate(Instant.now().plusMillis(refreshExpiration))
                 .isActive(true)
                 .build();
 
