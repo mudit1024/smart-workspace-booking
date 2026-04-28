@@ -46,4 +46,11 @@ public class AuthController {
                 .role("USER")
                 .build();
     }
+
+    @PostMapping("/logout")
+    public String logout(@RequestBody RefreshRequest request) {
+
+        refreshTokenService.revokeToken(request.getRefreshToken());
+        return "Logged out successfully";
+    }
 }
