@@ -24,4 +24,14 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
+
+
+    @ExceptionHandler(UserNotFoundException.class)
+public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
+
+    Map<String, String> error = new HashMap<>();
+    error.put("error", ex.getMessage());
+
+    return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+}
 }

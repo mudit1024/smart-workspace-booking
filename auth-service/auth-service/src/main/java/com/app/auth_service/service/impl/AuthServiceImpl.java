@@ -1,6 +1,5 @@
 package com.app.auth_service.service.impl;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,6 +8,7 @@ import com.app.auth_service.dto.AuthResponse;
 import com.app.auth_service.dto.LoginRequest;
 import com.app.auth_service.dto.RegisterRequest;
 import com.app.auth_service.entity.User;
+import com.app.auth_service.exception.UserNotFoundException;
 import com.app.auth_service.repository.UserRepository;
 import com.app.auth_service.service.AuthService;
 import com.app.auth_service.util.JwtUtil;
@@ -39,23 +39,21 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-
     @Override
-public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
 
-    User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
 
-    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-        throw new RuntimeException("Invalid credentials");
+        String token = jwtUtil.generateToken(user.getId(), user.getRole());
+
+        return AuthResponse.builder()
+                .accessToken(token)
+                .userId(user.getId().toString())
+                .role(user.getRole())
+                .build();
     }
-
-    String token = jwtUtil.generateToken(user.getId(), user.getRole());
-
-    return AuthResponse.builder()
-            .accessToken(token)
-            .userId(user.getId().toString())
-            .role(user.getRole())
-            .build();
-}
 }
