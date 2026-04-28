@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.auth_service.dto.AuthResponse;
+import com.app.auth_service.dto.LoginRequest;
 import com.app.auth_service.dto.RegisterRequest;
 import com.app.auth_service.service.AuthService;
 
@@ -18,5 +19,10 @@ public class AuthController {
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }
