@@ -12,7 +12,8 @@ spring:
     show-sql: true
 jwt:
   secret: 1aMCR3at1n6th15auth5y5t3mf0rmy5martworksp4c3b00k1ngapp
-  expiration: 900000  # 15 min in ms
+  expiration: 30000
+  # 900000  # 15 min in ms
 
 server:
   port: 8081
