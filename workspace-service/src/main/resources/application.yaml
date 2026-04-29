@@ -1,3 +1,18 @@
+server:
+  port: 8082
+
 spring:
   application:
     name: workspace-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/workspace_db
+    username: postgres
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+jwt:
+  secret: 1aMCR3at1n6th15auth5y5t3mf0rmy5martworksp4c3b00k1ngapp
