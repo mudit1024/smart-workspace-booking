@@ -2,7 +2,7 @@ package com.app.workspace_service.controller;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.workspace_service.dto.WorkspaceRequest;
@@ -20,22 +20,19 @@ public class WorkspaceController {
     private final WorkspaceService service;
 
     @PostMapping
-    public Workspace create(HttpServletRequest request,
+    public Workspace create(Authentication authentication,
             @Valid @RequestBody WorkspaceRequest dto) {
 
-        String userId = (String) request.getAttribute("userId");
+        String userId = (String) authentication.getPrincipal();
 
         return service.createWorkspace(dto, userId);
     }
 
     @GetMapping("/me")
-    public String getUser() {
+    public String getUser(Authentication authentication) {
 
-        Object principal = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+        String userId = (String) authentication.getPrincipal();
 
-        return "User ID: " + principal;
+        return "User ID: " + userId;
     }
 }
