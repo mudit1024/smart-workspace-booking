@@ -2,6 +2,7 @@ package com.app.workspace_service.controller;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,11 +39,13 @@ public class WorkspaceController {
     }
 
     @PostMapping("/book")
-    public void book(Authentication auth,
+    public ResponseEntity<String> book(Authentication auth,
             @Valid @RequestBody BookingRequest request) {
 
         String userId = (String) auth.getPrincipal();
 
         service.bookSlot(request, userId);
+
+        return ResponseEntity.ok("Booking processed successfully");
     }
 }
