@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.app.workspace_service.dto.BookingRequest;
 import com.app.workspace_service.dto.WorkspaceRequest;
 import com.app.workspace_service.entity.Workspace;
 import com.app.workspace_service.service.WorkspaceService;
@@ -34,5 +35,14 @@ public class WorkspaceController {
         String userId = (String) authentication.getPrincipal();
 
         return "User ID: " + userId;
+    }
+
+    @PostMapping("/book")
+    public void book(Authentication auth,
+            @Valid @RequestBody BookingRequest request) {
+
+        String userId = (String) auth.getPrincipal();
+
+        service.bookSlot(request, userId);
     }
 }
