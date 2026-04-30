@@ -239,7 +239,7 @@ public void rejectBooking(UUID bookingId, String userId) {
         throw new RuntimeException("Only host can reject");
     }
 
-    booking.setStatus("REJECTED");
+    booking.setStatus(BookingStatus.REJECTED);
     bookingRepository.save(booking);
 }
 }
