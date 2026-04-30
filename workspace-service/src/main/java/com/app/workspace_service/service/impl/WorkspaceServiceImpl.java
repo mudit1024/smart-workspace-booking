@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
-    private final WorkspaceRepository repository;
+    private final WorkspaceRepository workspaceRepository;
     private final SlotRepository slotRepository;
     private final BookingRepository bookingRepository;
 
@@ -38,7 +38,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return repository.save(workspace);
+        return workspaceRepository.save(workspace);
     }
 
     @Override
@@ -57,15 +57,17 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
             // 🎯 CASE 1: Create new slot
 
-            Slot newSlot = Slot.builder()
-                    .workspaceId(request.getWorkspaceId())
-                    .startTime(request.getStartTime())
-                    .endTime(request.getEndTime())
-                    .capacity(5) // temporary (later from workspace)
-                    .bookedCount(1)
-                    .openForJoin(request.isOpenForJoin())
-                    .build();
+            Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
+        .orElseThrow(() -> new RuntimeException("Workspace not found"));
 
+Slot newSlot = Slot.builder()
+        .workspaceId(request.getWorkspaceId())
+        .startTime(request.getStartTime())
+        .endTime(request.getEndTime())
+        .capacity(workspace.getCapacity()) 
+        .bookedCount(1)
+        .openForJoin(request.isOpenForJoin())
+        .build();
             slotRepository.save(newSlot);
 
             Booking booking = Booking.builder()
@@ -112,10 +114,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     public List<Workspace> getWorkspaces(String location) {
 
         if (location != null && !location.isBlank()) {
-            return repository.findByLocationIgnoreCase(location);
+            return workspaceRepository.findByLocationIgnoreCase(location);
         }
 
-        return repository.findAll();
+        return workspaceRepository.findAll();
     }
 
     @Override
