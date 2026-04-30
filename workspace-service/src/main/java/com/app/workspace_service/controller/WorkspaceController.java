@@ -84,4 +84,29 @@ public class WorkspaceController {
 
         return ResponseEntity.ok("Booking cancelled");
     }
+
+    @PostMapping("/booking/{bookingId}/approve")
+    public ResponseEntity<String> approve(
+            Authentication auth,
+            @PathVariable UUID bookingId) {
+
+        String userId = (String) auth.getPrincipal();
+
+        service.approveBooking(bookingId, userId);
+
+        return ResponseEntity.ok("Booking approved");
+    }
+
+    @PostMapping("/booking/{bookingId}/reject")
+    public ResponseEntity<String> reject(
+            Authentication auth,
+            @PathVariable UUID bookingId) {
+
+        String userId = (String) auth.getPrincipal();
+
+        service.rejectBooking(bookingId, userId);
+
+        return ResponseEntity.ok("Booking rejected");
+    }
+
 }

@@ -22,4 +22,8 @@ public interface WorkspaceService {
    List<Booking> getParticipants(UUID slotId);
 
    void cancelBooking(UUID bookingId, String userId);
+
+   void approveBooking(UUID bookingId, String userId);
+
+   void rejectBooking(UUID bookingId, String userId);
 }

@@ -184,4 +184,70 @@ public void cancelBooking(UUID bookingId, String userId) {
     booking.setStatus("CANCELLED");
     bookingRepository.save(booking);
 }
+
+
+@Override
+public void approveBooking(UUID bookingId, String userId) {
+
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+    if (!booking.getStatus().equals("PENDING")) {
+        throw new RuntimeException("Only pending bookings can be approved");
+    }
+
+    Slot slot = slotRepository.findById(booking.getSlotId())
+            .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+    // find HOST
+    Booking host = bookingRepository.findBySlotId(slot.getId())
+            .stream()
+            .filter(Booking::isHost)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Host not found"));
+
+    if (!host.getUserId().toString().equals(userId)) {
+        throw new RuntimeException("Only host can approve");
+    }
+
+    if (slot.getBookedCount() >= slot.getCapacity()) {
+        throw new RuntimeException("Slot full");
+    }
+
+    // APPROVE
+    booking.setStatus("APPROVED");
+    bookingRepository.save(booking);
+
+    slot.setBookedCount(slot.getBookedCount() + 1);
+    slotRepository.save(slot);
+}
+
+
+@Override
+public void rejectBooking(UUID bookingId, String userId) {
+
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+    if (!booking.getStatus().equals("PENDING")) {
+        throw new RuntimeException("Only pending bookings can be rejected");
+    }
+
+    Slot slot = slotRepository.findById(booking.getSlotId())
+            .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+    // find HOST
+    Booking host = bookingRepository.findBySlotId(slot.getId())
+            .stream()
+            .filter(Booking::isHost)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Host not found"));
+
+    if (!host.getUserId().toString().equals(userId)) {
+        throw new RuntimeException("Only host can reject");
+    }
+
+    booking.setStatus("REJECTED");
+    bookingRepository.save(booking);
+}
 }
