@@ -1,11 +1,15 @@
 package com.app.workspace_service.service.impl;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.app.workspace_service.dto.BookingRequest;
 import com.app.workspace_service.dto.WorkspaceRequest;
 import com.app.workspace_service.entity.Booking;
+import com.app.workspace_service.entity.BookingStatus;
 import com.app.workspace_service.entity.Slot;
 import com.app.workspace_service.entity.Workspace;
 import com.app.workspace_service.repository.BookingRepository;
@@ -42,60 +46,61 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
-    public void bookSlot(BookingRequest request, String userId) {
+@Transactional
+public void bookSlot(BookingRequest request, String userId) {
 
-        // 1. Find existing slots for workspace
-        List<Slot> slots = slotRepository.findByWorkspaceId(request.getWorkspaceId());
+    List<Slot> slots = slotRepository.findByWorkspaceId(request.getWorkspaceId());
 
-        // 2. Check for overlapping slot
-        Optional<Slot> existingSlot = slots.stream()
-                .filter(slot -> request.getStartTime().isBefore(slot.getEndTime()) &&
-                        request.getEndTime().isAfter(slot.getStartTime()))
-                .findFirst();
+    Optional<Slot> existingSlot = slots.stream()
+            .filter(slot -> request.getStartTime().isBefore(slot.getEndTime()) &&
+                    request.getEndTime().isAfter(slot.getStartTime()))
+            .findFirst();
 
-        if (existingSlot.isEmpty()) {
+    UUID userUUID = UUID.fromString(userId);
 
-            // 🎯 CASE 1: Create new slot
+    if (existingSlot.isEmpty()) {
 
-            Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
-        .orElseThrow(() -> new RuntimeException("Workspace not found"));
+        Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
 
-Slot newSlot = Slot.builder()
-        .workspaceId(request.getWorkspaceId())
-        .startTime(request.getStartTime())
-        .endTime(request.getEndTime())
-        .capacity(workspace.getCapacity()) 
-        .bookedCount(1)
-        .openForJoin(request.isOpenForJoin())
-        .build();
-            slotRepository.save(newSlot);
+        Slot newSlot = Slot.builder()
+                .workspaceId(request.getWorkspaceId())
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .capacity(workspace.getCapacity())
+                .bookedCount(1)
+                .openForJoin(request.isOpenForJoin())
+                .build();
 
-            Booking booking = Booking.builder()
-                    .slotId(newSlot.getId())
-                    .userId(UUID.fromString(userId))
-                    .status("APPROVED")
-                    .isHost(true)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        slotRepository.save(newSlot);
 
-            bookingRepository.save(booking);
+        Booking booking = Booking.builder()
+                .slotId(newSlot.getId())
+                .userId(userUUID)
+                .status(BookingStatus.APPROVED)
+                .isHost(true)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-            return;
-        }
+        bookingRepository.save(booking);
+        return;
+    }
 
-        // 🎯 CASE 2: Slot exists
-        Slot slot = existingSlot.get();
+    Slot slot = existingSlot.get();
 
-        if (slot.getBookedCount() >= slot.getCapacity()) {
-            throw new RuntimeException("Slot full");
-        }
+    // ❗ duplicate booking check
+    if (bookingRepository.existsBySlotIdAndUserId(slot.getId(), userUUID)) {
+        throw new RuntimeException("Already booked this slot");
+    }
 
-        // decide status
-        String status = slot.isOpenForJoin() ? "APPROVED" : "PENDING";
+    try {
+        BookingStatus status = slot.isOpenForJoin()
+                ? BookingStatus.APPROVED
+                : BookingStatus.PENDING;
 
         Booking booking = Booking.builder()
                 .slotId(slot.getId())
-                .userId(UUID.fromString(userId))
+                .userId(userUUID)
                 .status(status)
                 .isHost(false)
                 .createdAt(LocalDateTime.now())
@@ -103,13 +108,15 @@ Slot newSlot = Slot.builder()
 
         bookingRepository.save(booking);
 
-        // update count ONLY if approved
-        if (status.equals("APPROVED")) {
+        if (status == BookingStatus.APPROVED) {
             slot.setBookedCount(slot.getBookedCount() + 1);
             slotRepository.save(slot);
         }
-    }
 
+    } catch (ObjectOptimisticLockingFailureException e) {
+        throw new RuntimeException("Slot just got filled, try again");
+    }
+}
     @Override
     public List<Workspace> getWorkspaces(String location) {
 
@@ -140,66 +147,52 @@ Slot newSlot = Slot.builder()
     }
 
 
-    @Override
+@Override
+@Transactional
 public void cancelBooking(UUID bookingId, String userId) {
 
     Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-    // only booking owner can cancel
     if (!booking.getUserId().toString().equals(userId)) {
         throw new RuntimeException("Unauthorized");
     }
 
-    // if already cancelled
-    if (booking.getStatus().equals("CANCELLED")) {
+    if (booking.getStatus() == BookingStatus.CANCELLED) {
         throw new RuntimeException("Already cancelled");
     }
 
     Slot slot = slotRepository.findById(booking.getSlotId())
             .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-    // HOST CASE
     if (booking.isHost()) {
-
-        // delete all bookings
-        bookingRepository.deleteAll(
-                bookingRepository.findBySlotId(slot.getId())
-        );
-
-        // delete slot
+        bookingRepository.deleteAll(bookingRepository.findBySlotId(slot.getId()));
         slotRepository.delete(slot);
-
         return;
     }
 
-    // NORMAL USER
-
-    // reduce count only if approved
-    if (booking.getStatus().equals("APPROVED")) {
+    if (booking.getStatus() == BookingStatus.APPROVED) {
         slot.setBookedCount(slot.getBookedCount() - 1);
         slotRepository.save(slot);
     }
 
-    booking.setStatus("CANCELLED");
+    booking.setStatus(BookingStatus.CANCELLED);
     bookingRepository.save(booking);
 }
-
-
 @Override
+@Transactional
 public void approveBooking(UUID bookingId, String userId) {
 
     Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-    if (!booking.getStatus().equals("PENDING")) {
+    if (booking.getStatus() != BookingStatus.PENDING) {
         throw new RuntimeException("Only pending bookings can be approved");
     }
 
     Slot slot = slotRepository.findById(booking.getSlotId())
             .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-    // find HOST
     Booking host = bookingRepository.findBySlotId(slot.getId())
             .stream()
             .filter(Booking::isHost)
@@ -210,18 +203,17 @@ public void approveBooking(UUID bookingId, String userId) {
         throw new RuntimeException("Only host can approve");
     }
 
-    if (slot.getBookedCount() >= slot.getCapacity()) {
-        throw new RuntimeException("Slot full");
+    try {
+        booking.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking);
+
+        slot.setBookedCount(slot.getBookedCount() + 1);
+        slotRepository.save(slot);
+
+    } catch (ObjectOptimisticLockingFailureException e) {
+        throw new RuntimeException("Slot just got filled, try again");
     }
-
-    // APPROVE
-    booking.setStatus("APPROVED");
-    bookingRepository.save(booking);
-
-    slot.setBookedCount(slot.getBookedCount() + 1);
-    slotRepository.save(slot);
 }
-
 
 @Override
 public void rejectBooking(UUID bookingId, String userId) {

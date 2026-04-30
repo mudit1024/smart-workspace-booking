@@ -1,4 +1,5 @@
 package com.app.workspace_service.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +25,8 @@ public class Booking {
     @Column(nullable = false)
     private UUID userId;
 
-    @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED
+    @Enumerated(EnumType.STRING)
+    private BookingStatus status;
 
     @Column(nullable = false)
     private boolean isHost; // first user = host

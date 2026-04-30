@@ -36,4 +36,7 @@ public class Slot {
 
     @Column(nullable = false)
     private boolean openForJoin; // others can request to join
+
+    @Version
+    private int version;
 }
