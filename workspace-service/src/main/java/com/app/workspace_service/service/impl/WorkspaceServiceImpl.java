@@ -33,6 +33,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .name(request.getName())
                 .type(request.getType())
                 .capacity(request.getCapacity())
+                .location(request.getLocation())
                 .ownerId(UUID.fromString(userId))
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -106,4 +107,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             slotRepository.save(slot);
         }
     }
+
+    @Override
+public List<Workspace> getWorkspaces(String location) {
+
+    if (location != null && !location.isBlank()) {
+        return repository.findByLocationIgnoreCase(location);
+    }
+
+    return repository.findAll();
+}
 }

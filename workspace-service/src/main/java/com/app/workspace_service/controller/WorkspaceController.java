@@ -2,6 +2,8 @@ package com.app.workspace_service.controller;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -47,5 +49,12 @@ public class WorkspaceController {
         service.bookSlot(request, userId);
 
         return ResponseEntity.ok("Booking processed successfully");
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Workspace>> getWorkspaces(
+            @RequestParam(required = false) String location) {
+
+        return ResponseEntity.ok(service.getWorkspaces(location));
     }
 }

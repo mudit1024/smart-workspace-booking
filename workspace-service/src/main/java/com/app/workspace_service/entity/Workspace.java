@@ -27,4 +27,7 @@ public class Workspace {
     private UUID ownerId;
 
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private String location;
 }
