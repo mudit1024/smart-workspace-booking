@@ -18,7 +18,9 @@ import com.app.workspace_service.service.WorkspaceService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/workspace")
 @RequiredArgsConstructor

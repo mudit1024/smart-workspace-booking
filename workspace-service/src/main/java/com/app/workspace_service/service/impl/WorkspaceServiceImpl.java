@@ -133,10 +133,10 @@ Slot newSlot = Slot.builder()
     @Override
     public List<Booking> getParticipants(UUID slotId) {
 
-        return bookingRepository.findBySlotId(slotId)
-        .stream()
-        .filter(b -> b.getStatus().equals("APPROVED"))
-        .toList();
+        return bookingRepository.findBySlotId(slotId);
+        // .stream()
+        // .filter(b -> b.getStatus().equals("APPROVED"))
+        // .toList();
     }
 
 
