@@ -109,12 +109,77 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
-public List<Workspace> getWorkspaces(String location) {
+    public List<Workspace> getWorkspaces(String location) {
 
-    if (location != null && !location.isBlank()) {
-        return repository.findByLocationIgnoreCase(location);
+        if (location != null && !location.isBlank()) {
+            return repository.findByLocationIgnoreCase(location);
+        }
+
+        return repository.findAll();
     }
 
-    return repository.findAll();
+    @Override
+    public List<Slot> getSlots(UUID workspaceId) {
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime next48 = now.plusHours(48);
+
+        return slotRepository.findByWorkspaceIdAndStartTimeBetween(
+                workspaceId, now, next48);
+    }
+
+    @Override
+    public List<Booking> getParticipants(UUID slotId) {
+
+        return bookingRepository.findBySlotId(slotId)
+        .stream()
+        .filter(b -> b.getStatus().equals("APPROVED"))
+        .toList();
+    }
+
+
+    @Override
+public void cancelBooking(UUID bookingId, String userId) {
+
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+    // only booking owner can cancel
+    if (!booking.getUserId().toString().equals(userId)) {
+        throw new RuntimeException("Unauthorized");
+    }
+
+    // if already cancelled
+    if (booking.getStatus().equals("CANCELLED")) {
+        throw new RuntimeException("Already cancelled");
+    }
+
+    Slot slot = slotRepository.findById(booking.getSlotId())
+            .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+    // HOST CASE
+    if (booking.isHost()) {
+
+        // delete all bookings
+        bookingRepository.deleteAll(
+                bookingRepository.findBySlotId(slot.getId())
+        );
+
+        // delete slot
+        slotRepository.delete(slot);
+
+        return;
+    }
+
+    // NORMAL USER
+
+    // reduce count only if approved
+    if (booking.getStatus().equals("APPROVED")) {
+        slot.setBookedCount(slot.getBookedCount() - 1);
+        slotRepository.save(slot);
+    }
+
+    booking.setStatus("CANCELLED");
+    bookingRepository.save(booking);
 }
 }

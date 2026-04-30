@@ -17,7 +17,9 @@ public interface WorkspaceService {
 
    List<Workspace> getWorkspaces(String location);
 
-   // List<Slot> getSlots(UUID workspaceId);
+   List<Slot> getSlots(UUID workspaceId);
 
-   // List<Booking> getParticipants(UUID slotId);
+   List<Booking> getParticipants(UUID slotId);
+
+   void cancelBooking(UUID bookingId, String userId);
 }

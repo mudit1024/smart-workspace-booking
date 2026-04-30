@@ -3,6 +3,7 @@ package com.app.workspace_service.controller;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.app.workspace_service.dto.BookingRequest;
 import com.app.workspace_service.dto.WorkspaceRequest;
+import com.app.workspace_service.entity.Booking;
+import com.app.workspace_service.entity.Slot;
 import com.app.workspace_service.entity.Workspace;
 import com.app.workspace_service.service.WorkspaceService;
 
@@ -56,5 +59,29 @@ public class WorkspaceController {
             @RequestParam(required = false) String location) {
 
         return ResponseEntity.ok(service.getWorkspaces(location));
+    }
+
+    @GetMapping("/{workspaceId}/slots")
+    public ResponseEntity<List<Slot>> getSlots(@PathVariable UUID workspaceId) {
+
+        return ResponseEntity.ok(service.getSlots(workspaceId));
+    }
+
+    @GetMapping("/slots/{slotId}/participants")
+    public ResponseEntity<List<Booking>> getParticipants(@PathVariable UUID slotId) {
+
+        return ResponseEntity.ok(service.getParticipants(slotId));
+    }
+
+    @PostMapping("/booking/{bookingId}/cancel")
+    public ResponseEntity<String> cancelBooking(
+            Authentication auth,
+            @PathVariable UUID bookingId) {
+
+        String userId = (String) auth.getPrincipal();
+
+        service.cancelBooking(bookingId, userId);
+
+        return ResponseEntity.ok("Booking cancelled");
     }
 }
