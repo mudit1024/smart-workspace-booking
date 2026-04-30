@@ -10,7 +10,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.app.workspace_service.dto.BookingRequest;
+import com.app.workspace_service.dto.BookingResponse;
+import com.app.workspace_service.dto.SlotResponse;
 import com.app.workspace_service.dto.WorkspaceRequest;
+import com.app.workspace_service.dto.WorkspaceResponse;
 import com.app.workspace_service.entity.Booking;
 import com.app.workspace_service.entity.Slot;
 import com.app.workspace_service.entity.Workspace;
@@ -57,21 +60,19 @@ public class WorkspaceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Workspace>> getWorkspaces(
+    public ResponseEntity<List<WorkspaceResponse>> getWorkspaces(
             @RequestParam(required = false) String location) {
 
         return ResponseEntity.ok(service.getWorkspaces(location));
     }
 
     @GetMapping("/{workspaceId}/slots")
-    public ResponseEntity<List<Slot>> getSlots(@PathVariable UUID workspaceId) {
-
+    public ResponseEntity<List<SlotResponse>> getSlots(@PathVariable UUID workspaceId) {
         return ResponseEntity.ok(service.getSlots(workspaceId));
     }
 
-    @GetMapping("/slots/{slotId}/participants")
-    public ResponseEntity<List<Booking>> getParticipants(@PathVariable UUID slotId) {
-
+    @GetMapping("/slot/{slotId}/participants")
+    public ResponseEntity<List<BookingResponse>> getParticipants(@PathVariable UUID slotId) {
         return ResponseEntity.ok(service.getParticipants(slotId));
     }
 

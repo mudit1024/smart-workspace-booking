@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.UUID;
 
 import com.app.workspace_service.dto.BookingRequest;
+import com.app.workspace_service.dto.BookingResponse;
+import com.app.workspace_service.dto.SlotResponse;
 import com.app.workspace_service.dto.WorkspaceRequest;
+import com.app.workspace_service.dto.WorkspaceResponse;
 import com.app.workspace_service.entity.Booking;
 import com.app.workspace_service.entity.Slot;
 import com.app.workspace_service.entity.Workspace;
@@ -15,11 +18,11 @@ public interface WorkspaceService {
 
    void bookSlot(BookingRequest request, String userId);
 
-   List<Workspace> getWorkspaces(String location);
+   List<WorkspaceResponse> getWorkspaces(String location);
 
-   List<Slot> getSlots(UUID workspaceId);
+   List<SlotResponse> getSlots(UUID workspaceId);
 
-   List<Booking> getParticipants(UUID slotId);
+   List<BookingResponse> getParticipants(UUID slotId);
 
    void cancelBooking(UUID bookingId, String userId);
 
