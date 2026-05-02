@@ -1,16 +1,13 @@
 import axios from "axios"
 
-const axiosClient = axios.create({
-  baseURL: "http://localhost:8081",
-  headers: {
-    "Content-Type": "application/json",
-  },
+const authClient = axios.create({
+  baseURL: import.meta.env.VITE_AUTH_API_URL,
 })
 
-axiosClient.interceptors.request.use((config) => {
+authClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token")
 
-  // ❗ DO NOT attach token for auth endpoints
+  // ❗ Don't attach token for login/register
   if (
     token &&
     !config.url.includes("/auth/login") &&
@@ -22,4 +19,4 @@ axiosClient.interceptors.request.use((config) => {
   return config
 })
 
-export default axiosClient
+export default authClient
