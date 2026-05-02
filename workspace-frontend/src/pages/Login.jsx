@@ -20,9 +20,20 @@ const handleLogin = async (e) => {
   try {
     const data = await loginUser(email, password)
 
+    // token
     localStorage.setItem("token", data.accessToken)
 
-    navigate("/dashboard") // 🔥 redirect
+    // 👤 user info (IMPORTANT FIX)
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        id: data.userId,
+        name: data.name,
+        email: data.email
+      })
+    )
+
+    navigate("/dashboard")
 
   } catch (error) {
     alert("Login failed")

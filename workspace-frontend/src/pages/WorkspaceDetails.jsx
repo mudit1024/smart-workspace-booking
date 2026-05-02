@@ -3,9 +3,12 @@ import { useParams } from "react-router-dom"
 import DashboardLayout from "../components/DashboardLayout"
 import { getSlots, bookWorkspace, getParticipants } from "../api/workspaceService"
 import { getWorkspaceById } from "../api/workspaceService"
+import { useNavigate } from "react-router-dom"
 import toast from "react-hot-toast"
+import { ChevronLeft } from "lucide-react"
 
 export default function WorkspaceDetails() {
+    const navigate = useNavigate()
     const { id } = useParams()
 
     const [workspace, setWorkspace] = useState(null)
@@ -236,7 +239,20 @@ export default function WorkspaceDetails() {
 
     return (
         <DashboardLayout>
-            <h1 className="text-2xl mb-6">Workspace Slots</h1>
+            <h1 className="text-2xl mb-6 flex items-center gap-3">
+    
+    <button
+    onClick={() => window.history.back()}
+    className="w-9 h-9 flex items-center justify-center rounded-full 
+               bg-white/10 hover:bg-white/20 border border-white/10 transition"
+>
+    <ChevronLeft size={18} />
+</button>
+
+    <span className="leading-none">
+        Workspace Slots
+    </span>
+</h1>
 
             {/* WORKSPACE DETAILS */}
             <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">

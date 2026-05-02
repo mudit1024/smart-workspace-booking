@@ -1,7 +1,17 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
+import { getUser } from "../utils/user"
+import { User } from "lucide-react"
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate()
+
+  const location = useLocation()
+
+  const hideUser =
+    location.pathname === "/login" ||
+    location.pathname === "/register";
+
+  const user = getUser()
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -10,6 +20,14 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-black text-white">
+      {!hideUser && (
+        <div className="absolute top-4 right-6 flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+          <User size={16} className="text-white" />
+          <span className="text-sm text-white">
+            {user?.name || "User"}
+          </span>
+        </div>
+      )}
 
       {/* Sidebar */}
       <div className="w-64 bg-white/5 border-r border-white/10 p-6 flex flex-col justify-between">
