@@ -5,8 +5,11 @@ import { createWorkspace } from "../api/workspaceService"
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState([]);
-  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const [locationFilter, setLocationFilter] = useState("Bangalore")
+  const [allLocations, setAllLocations] = useState([])
+  const [loadingLocations, setLoadingLocations] = useState(true)
 
   //add new workspace
   const [name, setName] = useState("")
@@ -29,12 +32,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchWorkspaces()
-  }, [location])
+  }, [locationFilter])
 
   const fetchWorkspaces = async () => {
     try {
-      setLoading(true)
-      const data = await getAllWorkspaces(location)
+      const data = await getAllWorkspaces(
+        locationFilter === "ALL" ? "" : locationFilter
+      )
       setWorkspaces(data)
     } catch (error) {
       console.error(error)
@@ -42,6 +46,32 @@ export default function Dashboard() {
       setLoading(false)
     }
   }
+
+  const fetchAllLocations = async () => {
+    try {
+      const data = await getAllWorkspaces("")
+
+      const uniqueLocations = [
+        "ALL",
+        ...new Set(data.map(ws => ws.location).filter(Boolean))
+      ]
+
+      setAllLocations(uniqueLocations)
+
+      if (!uniqueLocations.includes(locationFilter)) {
+        setLocationFilter("ALL")
+      }
+
+    } catch (error) {
+      console.error("Failed to fetch locations", error)
+    } finally {
+      setLoadingLocations(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAllLocations()
+  }, [])
 
   const handleCreateWorkspace = async () => {
     try {
@@ -79,28 +109,50 @@ export default function Dashboard() {
         <div className="flex gap-4">
 
           {/* Location filter (backend) */}
-          <input
-            type="text"
-            placeholder="Filter by location..."
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="p-2 rounded bg-white/5 border border-white/10"
-          />
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-400 mb-1">
+              Location
+            </label>
+
+            <select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className={`p-2 rounded bg-white/5 border border-white/10 text-white
+                focus:outline-none focus:ring-2 focus:ring-purple-500
+                appearance-none
+                ${loadingLocations ? "animate-pulse" : ""}`}
+            >
+              {loadingLocations ? (
+                <option>Loading...</option>
+              ) : (
+                allLocations.map((loc) => (
+                  <option key={loc} value={loc} className="bg-black text-white">
+                    {loc}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
 
           {/* Type filter (frontend) */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="p-2 rounded bg-white/5 border border-white/10 text-white 
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-400 mb-1">
+              Type
+            </label>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="p-2 rounded bg-white/5 border border-white/10 text-white 
              focus:outline-none focus:ring-2 focus:ring-purple-500
              appearance-none"
-          >
-            {uniqueTypes.map((t) => (
-              <option key={t} value={t} className="bg-black text-white">
-                {t}
-              </option>
-            ))}
-          </select>
+            >
+              {uniqueTypes.map((t) => (
+                <option key={t} value={t} className="bg-black text-white">
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
 
         </div>
 
