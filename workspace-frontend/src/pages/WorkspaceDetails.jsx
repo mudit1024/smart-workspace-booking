@@ -1,276 +1,460 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import DashboardLayout from "../components/DashboardLayout"
-import { getSlots, bookWorkspace } from "../api/workspaceService"
+import { getSlots, bookWorkspace, getParticipants } from "../api/workspaceService"
 import { getWorkspaceById } from "../api/workspaceService"
+import toast from "react-hot-toast"
 
 export default function WorkspaceDetails() {
-  const { id } = useParams()
+    const { id } = useParams()
 
-  const [workspace, setWorkspace] = useState(null)
-  const [slots, setSlots] = useState([])
-  const [loading, setLoading] = useState(true)
+    const [workspace, setWorkspace] = useState(null)
+    const [slots, setSlots] = useState([])
+    const [loading, setLoading] = useState(true)
 
-  // booking form state
-  const [showForm, setShowForm] = useState(false)
-  const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
-  const [openForJoin, setOpenForJoin] = useState(false)
+    // booking form state
+    const [showForm, setShowForm] = useState(false)
+    const [startTime, setStartTime] = useState("")
+    const [endTime, setEndTime] = useState("")
+    const [openForJoin, setOpenForJoin] = useState(false)
 
-  // filters
-  const [showOpenOnly, setShowOpenOnly] = useState(false)
-  const [minAvailable, setMinAvailable] = useState(0)
+    // filters
+    const [showOpenOnly, setShowOpenOnly] = useState(false)
+    const [minAvailable, setMinAvailable] = useState(0)
 
-  // ---------------- FETCH DATA ----------------
+    //participants
+    const [participantsMap, setParticipantsMap] = useState({})
+    const [loadingParticipants, setLoadingParticipants] = useState({})
+    const [openParticipants, setOpenParticipants] = useState({})
 
-  useEffect(() => {
-    fetchWorkspace()
-    fetchSlots()
-  }, [id])
+    // ---------------- FETCH DATA ----------------
 
-  const fetchWorkspace = async () => {
-    try {
-      const data = await getWorkspaceById(id)
-      setWorkspace(data)
-    } catch (error) {
-      console.error("Failed to fetch workspace", error)
+    useEffect(() => {
+        fetchWorkspace()
+        fetchSlots()
+    }, [id])
+
+    const fetchWorkspace = async () => {
+        try {
+            const data = await getWorkspaceById(id)
+            setWorkspace(data)
+        } catch (error) {
+            console.error("Failed to fetch workspace", error)
+            toast.error("Failed to load workspace")
+        }
     }
-  }
 
-  const fetchSlots = async () => {
-    try {
-      setLoading(true)
-      const data = await getSlots(id)
-      setSlots(data)
-    } catch (err) {
-      console.error("Failed to fetch slots", err)
-    } finally {
-      setLoading(false)
+    const fetchSlots = async () => {
+        try {
+            setLoading(true)
+            const data = await getSlots(id)
+            setSlots(data)
+        } catch (err) {
+            console.error("Failed to fetch slots", err)
+            toast.error("Failed to load slots")
+        } finally {
+            setLoading(false)
+        }
     }
-  }
 
-  // ---------------- FILTER LOGIC ----------------
+    const toggleParticipants = async (slotId) => {
 
-  const filteredSlots = slots.filter((slot) => {
-    const available = slot.capacity - slot.bookedCount
+        // CLOSE if already open
+        if (openParticipants[slotId]) {
+            setOpenParticipants(prev => ({
+                ...prev,
+                [slotId]: false
+            }))
+            return
+        }
 
-    if (showOpenOnly && !slot.openForJoin) return false
-    if (available < minAvailable) return false
+        // OPEN + FETCH if not loaded yet
+        try {
+            setLoadingParticipants(prev => ({ ...prev, [slotId]: true }))
 
-    return true
-  })
+            const data = await getParticipants(slotId)
 
-  // ---------------- JOIN EXISTING SLOT ----------------
+            setParticipantsMap(prev => ({
+                ...prev,
+                [slotId]: data
+            }))
 
-  const handleJoin = async (slot) => {
-    try {
-      await bookWorkspace({
-        workspaceId: id,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        openForJoin: slot.openForJoin,
-      })
+            setOpenParticipants(prev => ({
+                ...prev,
+                [slotId]: true
+            }))
 
-      alert("Joined slot successfully")
-      fetchSlots()
-    } catch (err) {
-      console.error("Join failed", err)
+        } catch (err) {
+            toast.error("Failed to load participants")
+        } finally {
+            setLoadingParticipants(prev => ({ ...prev, [slotId]: false }))
+        }
     }
-  }
+    // ---------------- FILTER LOGIC ----------------
 
-  // ---------------- CREATE NEW SLOT ----------------
+    const filteredSlots = slots.filter((slot) => {
+        const available = slot.capacity - slot.bookedCount
 
-  const handleCreateSlot = async () => {
-    try {
-      await bookWorkspace({
-        workspaceId: id,
-        startTime,
-        endTime,
-        openForJoin,
-      })
+        if (showOpenOnly && !slot.openForJoin) return false
+        if (available < minAvailable) return false
 
-      alert("Slot created & booked")
-      setShowForm(false)
+        return true
+    })
 
-      // reset form
-      setStartTime("")
-      setEndTime("")
-      setOpenForJoin(false)
+    // ---------------- JOIN EXISTING SLOT ----------------
 
-      fetchSlots()
-    } catch (err) {
-      console.error("Create slot failed", err)
+    const handleJoinSlot = async (slot) => {
+        try {
+            await bookWorkspace({
+                workspaceId: id,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                openForJoin: slot.openForJoin
+            })
+
+            toast.success("Slot booked")
+            fetchSlots()
+
+        } catch (err) {
+            const error = err.response?.data
+
+            switch (error?.error) {
+
+                case "ALREADY_BOOKED":
+                    toast.error("You already booked this slot")
+                    break
+
+                case "SLOT_FULL":
+                    toast.error("This slot is full")
+                    break
+
+                case "WORKSPACE_NOT_FOUND":
+                    toast.error("Workspace not found")
+                    break
+
+                default:
+                    toast.error(error?.message || "Something went wrong")
+            }
+        }
     }
-  }
 
-  // ---------------- SAFE RENDER ----------------
+    // ---------------- CREATE NEW SLOT ----------------
 
-  if (!workspace) {
+    const handleCreateSlot = async () => {
+        try {
+            const start = new Date(startTime)
+            const end = new Date(endTime)
+            const now = new Date()
+
+            // ❌ 1. Start must be in future
+            if (start <= now) {
+                alert("Start time must be in the future")
+                return
+            }
+
+            // ❌ 2. End must be after start
+            if (end <= start) {
+                alert("End time must be after start time")
+                return
+            }
+
+            // ❌ 3. Max 48 hours rule
+            const maxTime = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+            if (start > maxTime) {
+                alert("Start time must be within next 48 hours")
+                return
+            }
+
+            // ❌ 4. Optional: duration limit (recommended UX)
+            const durationInHours = (end - start) / (1000 * 60 * 60)
+            if (durationInHours > 8) {
+                alert("Slot duration cannot exceed 8 hours")
+                return
+            }
+
+            // ❌ 5. Overlapping slot check (your previous fix)
+            const overlappingSlot = slots.find(slot => {
+                return (
+                    start < new Date(slot.endTime) &&
+                    end > new Date(slot.startTime)
+                )
+            })
+
+            if (overlappingSlot) {
+                alert("Slot already exists in this time range. Please join instead.")
+                return
+            }
+
+            // ✅ API CALL
+            const payload = {
+                workspaceId: id,
+                startTime: startTime,
+                endTime: endTime,
+                openForJoin
+            }
+
+            await bookWorkspace(payload)
+
+            alert("Slot created & booked")
+            setShowForm(false)
+            fetchSlots()
+
+        } catch (err) {
+            const error = err.response?.data
+
+            switch (error?.error) {
+
+                case "ALREADY_BOOKED":
+                    toast.error("You already booked this slot")
+                    break
+
+                case "SLOT_FULL":
+                    toast.error("This slot is full")
+                    break
+
+                case "WORKSPACE_NOT_FOUND":
+                    toast.error("Workspace not found")
+                    break
+
+                default:
+                    toast.error(error?.message || "Something went wrong")
+            }
+        }
+    }
+
+
+
+    // ---------------- SAFE RENDER ----------------
+
+    if (!workspace) {
+        return (
+            <DashboardLayout>
+                <p className="text-white">Loading workspace...</p>
+            </DashboardLayout>
+        )
+    }
+
     return (
-      <DashboardLayout>
-        <p className="text-white">Loading workspace...</p>
-      </DashboardLayout>
+        <DashboardLayout>
+            <h1 className="text-2xl mb-6">Workspace Slots</h1>
+
+            {/* WORKSPACE DETAILS */}
+            <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
+                <h2 className="text-xl font-medium">{workspace.name}</h2>
+
+                <div className="flex gap-6 mt-2 text-sm text-gray-400">
+                    <p>📍 {workspace.location}</p>
+                    <p>👥 Capacity: {workspace.capacity}</p>
+                    <p>🏷 Type: {workspace.type}</p>
+                </div>
+            </div>
+
+            {/* FILTERS + ACTION */}
+            <div className="flex justify-between items-end mb-6">
+
+                <div className="flex gap-6">
+
+                    {/* OPEN SLOT TOGGLE */}
+                    <div className="flex flex-col">
+                        <label className="text-xs text-gray-400 mb-1">Open Slots</label>
+
+                        <button
+                            onClick={() => setShowOpenOnly(prev => !prev)}
+                            className={`w-[80px] h-[36px] rounded-full relative transition
+              ${showOpenOnly ? "bg-purple-600" : "bg-white/10"}`}
+                        >
+                            <div
+                                className={`absolute top-1 left-1 w-[28px] h-[28px] rounded-full bg-white transition
+                ${showOpenOnly ? "translate-x-[44px]" : ""}`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* MIN AVAILABLE */}
+                    <div className="flex flex-col">
+                        <label className="text-xs text-gray-400 mb-1">Min Available</label>
+                        <input
+                            type="number"
+                            value={minAvailable}
+                            onChange={(e) => setMinAvailable(Number(e.target.value))}
+                            className="p-2 rounded bg-white/5 border border-white/10 text-white w-[100px]"
+                        />
+                    </div>
+
+                </div>
+
+                {/* CREATE BUTTON */}
+                <button
+                    onClick={() => setShowForm(true)}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded"
+                >
+                    + Pick New Slot
+                </button>
+            </div>
+
+            {/* SLOT LIST */}
+            {loading ? (
+                <p>Loading slots...</p>
+            ) : (
+                <div className="grid grid-cols-2 gap-4">
+                    {filteredSlots.map((slot) => (
+                        <div
+                            key={slot.id}
+                            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition"
+                        >
+                            <p className="text-sm text-gray-400">
+                                {new Date(slot.startTime).toLocaleString("en-GB", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: false
+                                })}
+                                {" → "}
+                                {new Date(slot.endTime).toLocaleTimeString("en-GB", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: false
+                                })}
+                            </p>
+
+                            <p className="text-sm mt-2">
+                                👥 {slot.bookedCount}/{slot.capacity}
+                            </p>
+
+                            <p className={`text-xs mt-1 ${slot.openForJoin ? "text-green-400" : "text-yellow-400"
+                                }`}>
+                                {slot.openForJoin
+                                    ? "Open to Join"
+                                    : "Approval Required"}
+                            </p>
+                            {/* VIEW PARTICIPANTS BUTTON */}
+                            <button
+                                onClick={() => toggleParticipants(slot.id)}
+                                className="mt-3 w-full bg-gray-700 py-1 rounded text-sm"
+                            >
+                                {loadingParticipants[slot.id]
+                                    ? "Loading..."
+                                    : "View Participants"}
+                            </button>
+
+                            {/* PARTICIPANTS LIST */}
+                            {openParticipants[slot.id] && participantsMap[slot.id] && (
+                                <div className="mt-2 text-xs text-gray-300 border-t border-white/10 pt-2">
+                                    <p className="text-gray-400 mb-1">Participants:</p>
+
+                                    {participantsMap[slot.id].length === 0 ? (
+                                        <p className="text-gray-500">No participants yet</p>
+                                    ) : (
+                                        participantsMap[slot.id].map((p, idx) => (
+                                            <div key={idx} className="flex justify-between">
+                                                <span>
+                                                    {p.userName || p.userId}
+                                                    {(p.host || p.host === "true") && " 👑"}
+                                                </span>
+                                                <span
+                                                    className={
+                                                        p.isHost
+                                                            ? "text-green-400"
+                                                            : p.status === "APPROVED"
+                                                                ? "text-green-400"
+                                                                : p.status === "PENDING"
+                                                                    ? "text-yellow-400"
+                                                                    : p.status === "REJECTED"
+                                                                        ? "text-red-400"
+                                                                        : "text-gray-400"
+                                                    }
+                                                >
+                                                    {p.isHost ? "HOST" : p.status}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                            <button
+                                onClick={() => handleJoinSlot(slot)}
+                                className="mt-3 w-full bg-purple-600 py-1 rounded text-sm"
+                            >
+                                Join Slot
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* CREATE SLOT MODAL */}
+            {showForm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+
+                    <div className="w-[420px] p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+
+                        <h2 className="text-lg mb-4 font-medium">Create New Slot</h2>
+
+                        {/* START TIME */}
+                        <div className="mb-3">
+                            <label className="text-xs text-gray-400">Start Time</label>
+                            <input
+                                type="datetime-local"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                min={new Date().toISOString().slice(0, 16)}
+                                max={new Date(Date.now() + 48 * 60 * 60 * 1000)
+                                    .toISOString()
+                                    .slice(0, 16)}
+                                className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
+                            />
+                        </div>
+
+                        {/* END TIME */}
+                        <div className="mb-3">
+                            <label className="text-xs text-gray-400">End Time</label>
+                            <input
+                                type="datetime-local"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
+                            />
+                        </div>
+
+                        {/* OPEN FOR JOIN */}
+                        <div className="flex items-center gap-2 mb-4">
+                            <input
+                                type="checkbox"
+                                checked={openForJoin}
+                                onChange={(e) => setOpenForJoin(e.target.checked)}
+                            />
+                            <label className="text-sm text-gray-300">
+                                Allow others to join instantly
+                            </label>
+                        </div>
+
+                        {/* ACTIONS */}
+                        <div className="flex justify-between">
+                            <button
+                                onClick={() => setShowForm(false)}
+                                className="text-gray-400"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleCreateSlot}
+                                disabled={
+                                    !startTime ||
+                                    !endTime ||
+                                    new Date(endTime) <= new Date(startTime)
+                                }
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded disabled:opacity-50"
+                            >
+                                Book Slot
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+        </DashboardLayout>
     )
-  }
-
-  return (
-    <DashboardLayout>
-      <h1 className="text-2xl mb-6">Workspace Slots</h1>
-
-      {/* WORKSPACE DETAILS */}
-      <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-        <h2 className="text-xl font-medium">{workspace.name}</h2>
-
-        <div className="flex gap-6 mt-2 text-sm text-gray-400">
-          <p>📍 {workspace.location}</p>
-          <p>👥 Capacity: {workspace.capacity}</p>
-          <p>🏷 Type: {workspace.type}</p>
-        </div>
-      </div>
-
-      {/* FILTERS + ACTION */}
-      <div className="flex justify-between items-end mb-6">
-
-        <div className="flex gap-6">
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">Open Slots</label>
-            <input
-              type="checkbox"
-              checked={showOpenOnly}
-              onChange={(e) => setShowOpenOnly(e.target.checked)}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">Min Available</label>
-            <input
-              type="number"
-              value={minAvailable}
-              onChange={(e) => setMinAvailable(Number(e.target.value))}
-              className="p-2 rounded bg-white/5 border border-white/10 text-white w-[100px]"
-            />
-          </div>
-
-        </div>
-
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded"
-        >
-          + Pick New Slot
-        </button>
-      </div>
-
-      {/* SLOT LIST */}
-      {loading ? (
-        <p>Loading slots...</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {filteredSlots.map((slot) => (
-            <div
-              key={slot.id}
-              className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition"
-            >
-              <p className="text-sm text-gray-400">
-                {new Date(slot.startTime).toLocaleString()} →{" "}
-                {new Date(slot.endTime).toLocaleTimeString()}
-              </p>
-
-              <p className="text-sm mt-2">
-                👥 {slot.bookedCount}/{slot.capacity}
-              </p>
-
-              <p
-                className={`text-xs mt-1 ${
-                  slot.openForJoin
-                    ? "text-green-400"
-                    : "text-yellow-400"
-                }`}
-              >
-                {slot.openForJoin
-                  ? "Open to Join"
-                  : "Approval Required"}
-              </p>
-
-              <button
-                onClick={() => handleJoin(slot)}
-                className="mt-3 w-full bg-purple-600 py-1 rounded text-sm"
-              >
-                Join Slot
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* CREATE SLOT MODAL */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-
-          <div className="w-[420px] p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
-
-            <h2 className="text-lg mb-4 font-medium">Create New Slot</h2>
-
-            {/* Start Time */}
-            <div className="mb-3">
-              <label className="text-xs text-gray-400">Start Time</label>
-              <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-                max={new Date(Date.now() + 48 * 60 * 60 * 1000)
-                  .toISOString()
-                  .slice(0, 16)}
-                className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
-              />
-            </div>
-
-            {/* End Time */}
-            <div className="mb-3">
-              <label className="text-xs text-gray-400">End Time</label>
-              <input
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
-              />
-            </div>
-
-            {/* Open For Join */}
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="checkbox"
-                checked={openForJoin}
-                onChange={(e) => setOpenForJoin(e.target.checked)}
-              />
-              <label className="text-sm text-gray-300">
-                Allow others to join instantly
-              </label>
-            </div>
-
-            {/* ACTIONS */}
-            <div className="flex justify-between">
-              <button
-                onClick={() => setShowForm(false)}
-                className="text-gray-400"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleCreateSlot}
-                disabled={!startTime || !endTime}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded disabled:opacity-50"
-              >
-                Book Slot
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-    </DashboardLayout>
-  )
 }

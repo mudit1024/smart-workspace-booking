@@ -43,3 +43,10 @@ export const getWorkspaceById = async (id) => {
   const response = await workspaceClient.get(`/workspace/${id}`)
   return response.data
 }
+
+export const getParticipants = async (slotId) => {
+  const res = await workspaceClient.get(
+    `/workspace/slot/${slotId}/participants`
+  )
+  return res.data
+}
