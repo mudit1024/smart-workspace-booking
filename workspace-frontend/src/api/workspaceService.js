@@ -1,16 +1,45 @@
 import workspaceClient from "./workspaceClient"
 
+/**
+ * Fetch all workspaces (with optional location filter)
+ */
 export const getAllWorkspaces = async (location) => {
-  const response = await workspaceClient.get("/workspace", {
-    params: {
-      location,
-    },
+  const res = await workspaceClient.get("/workspace", {
+    params: { location },
   })
-
-  return response.data
+  return res.data
 }
 
-export const createWorkspace = async (workspaceData) => {
-  const response = await workspaceClient.post("/workspace", workspaceData)
+/**
+ * Create new workspace
+ */
+export const createWorkspace = async (payload) => {
+  const res = await workspaceClient.post("/workspace", payload)
+  return res.data
+}
+
+/**
+ * ✅ Fetch slots for a workspace
+ */
+export const getSlots = async (workspaceId) => {
+  console.log("Calling slots API with:", workspaceId)
+
+  const res = await workspaceClient.get(
+    `/workspace/${workspaceId}/slots`
+  )
+
+  return res.data
+}
+
+/**
+ * ✅ Book workspace (creates OR joins slot)
+ */
+export const bookWorkspace = async (payload) => {
+  const res = await workspaceClient.post("/workspace/book", payload)
+  return res.data
+}
+
+export const getWorkspaceById = async (id) => {
+  const response = await workspaceClient.get(`/workspace/${id}`)
   return response.data
 }

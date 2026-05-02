@@ -2,8 +2,10 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { getAllWorkspaces } from "../api/workspaceService"
 import { createWorkspace } from "../api/workspaceService"
+import { useNavigate } from "react-router-dom"
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -181,6 +183,12 @@ export default function Dashboard() {
               <p className="text-sm text-gray-400">
                 Type: {ws.type}
               </p>
+              <button
+                onClick={() => navigate(`/workspace/${ws.id}`)}
+                className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm"
+              >
+                View Slots
+              </button>
             </div>
           ))}
         </div>
@@ -224,7 +232,8 @@ export default function Dashboard() {
             <div className="flex justify-between">
 
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  setShowCreateModal(false)}}
                 className="text-gray-400"
               >
                 Cancel
