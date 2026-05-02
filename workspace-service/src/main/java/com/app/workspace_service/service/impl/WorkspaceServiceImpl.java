@@ -1,5 +1,6 @@
 package com.app.workspace_service.service.impl;
 
+import com.app.workspace_service.client.AuthClient;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -32,6 +33,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final SlotRepository slotRepository;
     private final BookingRepository bookingRepository;
+    private final AuthClient authClient;
 
     @Override
     public Workspace createWorkspace(WorkspaceRequest request, String userId) {
@@ -49,75 +51,95 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
+    public WorkspaceResponse getWorkspaceById(UUID id) {
+        Workspace ws = workspaceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+
+        return WorkspaceResponse.builder()
+                .id(ws.getId())
+                .type(ws.getType())
+                .name(ws.getName())
+                .capacity(ws.getCapacity())
+                .location(ws.getLocation())
+                .build();
+    }
+
+    @Override
     @Transactional
     public void bookSlot(BookingRequest request, String userId) {
+
+        UUID userUUID = UUID.fromString(userId);
+
+        Slot slot = findOrCreateSlot(request);
+
+        validateBooking(slot, userUUID);
+
+        createBooking(slot, userUUID);
+    }
+
+    private Slot findOrCreateSlot(BookingRequest request) {
 
         List<Slot> slots = slotRepository.findByWorkspaceId(request.getWorkspaceId());
 
         Optional<Slot> existingSlot = slots.stream()
-                .filter(slot -> request.getStartTime().isBefore(slot.getEndTime()) &&
-                        request.getEndTime().isAfter(slot.getStartTime()))
+                .filter(slot ->
+                        request.getStartTime().isBefore(slot.getEndTime()) &&
+                                request.getEndTime().isAfter(slot.getStartTime())
+                )
                 .findFirst();
 
-        UUID userUUID = UUID.fromString(userId);
-
-        if (existingSlot.isEmpty()) {
-
-            Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
-                    .orElseThrow(() -> new RuntimeException("Workspace not found"));
-
-            Slot newSlot = Slot.builder()
-                    .workspaceId(request.getWorkspaceId())
-                    .startTime(request.getStartTime())
-                    .endTime(request.getEndTime())
-                    .capacity(workspace.getCapacity())
-                    .bookedCount(1)
-                    .openForJoin(request.isOpenForJoin())
-                    .build();
-
-            slotRepository.save(newSlot);
-
-            Booking booking = Booking.builder()
-                    .slotId(newSlot.getId())
-                    .userId(userUUID)
-                    .status(BookingStatus.APPROVED)
-                    .isHost(true)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            bookingRepository.save(booking);
-            return;
+        if (existingSlot.isPresent()) {
+            return existingSlot.get();
         }
 
-        Slot slot = existingSlot.get();
+        Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
 
-        // ❗ duplicate booking check
+        Slot newSlot = Slot.builder()
+                .workspaceId(request.getWorkspaceId())
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .capacity(workspace.getCapacity())
+                .bookedCount(0)
+                .openForJoin(request.isOpenForJoin())
+                .build();
+
+        return slotRepository.save(newSlot);
+    }
+
+
+    private void validateBooking(Slot slot, UUID userUUID) {
+
         if (bookingRepository.existsBySlotIdAndUserId(slot.getId(), userUUID)) {
             throw new RuntimeException("Already booked this slot");
         }
 
-        try {
-            BookingStatus status = slot.isOpenForJoin()
-                    ? BookingStatus.APPROVED
-                    : BookingStatus.PENDING;
+        if (slot.getBookedCount() >= slot.getCapacity()) {
+            throw new RuntimeException("Slot is full");
+        }
+    }
 
-            Booking booking = Booking.builder()
-                    .slotId(slot.getId())
-                    .userId(userUUID)
-                    .status(status)
-                    .isHost(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+    private void createBooking(Slot slot, UUID userUUID) {
 
-            bookingRepository.save(booking);
+        BookingStatus status = slot.isOpenForJoin()
+                ? BookingStatus.APPROVED
+                : BookingStatus.PENDING;
 
-            if (status == BookingStatus.APPROVED) {
-                slot.setBookedCount(slot.getBookedCount() + 1);
-                slotRepository.save(slot);
-            }
+        Booking booking = Booking.builder()
+                .slotId(slot.getId())
+                .userId(userUUID)
+                .status(status)
+                .isHost(slot.getBookedCount()==0)
+                .createdAt(LocalDateTime.now())
+                .build();
+        if(booking.isHost()){
+            booking.setStatus(BookingStatus.APPROVED);
+        }
+        bookingRepository.save(booking);
 
-        } catch (ObjectOptimisticLockingFailureException e) {
-            throw new RuntimeException("Slot just got filled, try again");
+        if (booking.getStatus() == BookingStatus.APPROVED ) {
+            slot.setBookedCount(slot.getBookedCount() + 1);
+            slotRepository.save(slot);
         }
     }
 
@@ -146,7 +168,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         LocalDateTime next48 = now.plusHours(48);
 
         return slotRepository
-                .findByWorkspaceIdAndStartTimeBetween(workspaceId, now, next48)
+                .findByWorkspaceId(workspaceId)
                 .stream()
                 .map(s -> SlotResponse.builder()
                         .id(s.getId())
@@ -161,11 +183,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     public List<BookingResponse> getParticipants(UUID slotId) {
-
+        System.out.println("Inside Service to fetch participants");
         return bookingRepository.findBySlotId(slotId)
                 .stream()
                 .map(b -> BookingResponse.builder()
                         .userId(b.getUserId())
+                        .userName(authClient.getUser(b.getUserId()).getName())
                         .status(b.getStatus().name())
                         .isHost(b.isHost())
                         .build())
@@ -247,14 +270,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        if (!booking.getStatus().equals("PENDING")) {
+        // FIX: ENUM comparison
+        if (booking.getStatus() != BookingStatus.PENDING) {
             throw new RuntimeException("Only pending bookings can be rejected");
         }
 
         Slot slot = slotRepository.findById(booking.getSlotId())
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-        // find HOST
         Booking host = bookingRepository.findBySlotId(slot.getId())
                 .stream()
                 .filter(Booking::isHost)

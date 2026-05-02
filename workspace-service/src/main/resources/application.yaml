@@ -20,4 +20,12 @@ jwt:
 springdoc:
   api-docs:
     enabled: true
-  override-with-generic-response: false 
+  override-with-generic-response: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+auth-service:
+  url: http://localhost:8081

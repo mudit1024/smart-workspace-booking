@@ -20,6 +20,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 
     http
         .csrf(csrf -> csrf.disable())
+            .cors(cors -> {})
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/auth/**",

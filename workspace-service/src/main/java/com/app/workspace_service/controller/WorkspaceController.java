@@ -66,6 +66,11 @@ public class WorkspaceController {
         return ResponseEntity.ok(service.getWorkspaces(location));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<WorkspaceResponse> getWorkspaceById(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.getWorkspaceById(id));
+    }
+
     @GetMapping("/{workspaceId}/slots")
     public ResponseEntity<List<SlotResponse>> getSlots(@PathVariable UUID workspaceId) {
         return ResponseEntity.ok(service.getSlots(workspaceId));

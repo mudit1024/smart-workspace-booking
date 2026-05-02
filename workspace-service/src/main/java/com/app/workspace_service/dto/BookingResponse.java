@@ -11,6 +11,7 @@ import java.util.UUID;
 public class BookingResponse {
 
     private UUID userId;
+    private String userName;
     private String status;
     private boolean isHost;
 }

@@ -12,8 +12,5 @@ public interface SlotRepository extends JpaRepository<Slot, UUID> {
 
     List<Slot> findByWorkspaceId(UUID workspaceId);
 
-    List<Slot> findByWorkspaceIdAndStartTimeBetween(
-            UUID workspaceId,
-            LocalDateTime start,
-            LocalDateTime end);
+
 }

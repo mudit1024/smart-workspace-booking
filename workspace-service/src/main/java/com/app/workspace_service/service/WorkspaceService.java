@@ -20,6 +20,8 @@ public interface WorkspaceService {
 
    List<WorkspaceResponse> getWorkspaces(String location);
 
+   public WorkspaceResponse getWorkspaceById(UUID id);
+
    List<SlotResponse> getSlots(UUID workspaceId);
 
    List<BookingResponse> getParticipants(UUID slotId);
