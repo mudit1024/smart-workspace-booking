@@ -1,7 +1,6 @@
 import workspaceClient from "./workspaceClient"
 
-export const getWorkspaces = async () => {
+export const getAllWorkspaces = async () => {
   const response = await workspaceClient.get("/workspace")
-
   return response.data
 }
