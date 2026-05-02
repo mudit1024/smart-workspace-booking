@@ -6,15 +6,28 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Link } from "react-router-dom"
 import AuthLayout from "../components/AuthLayout"
+import { loginUser } from "../api/authService"
+import { useNavigate } from "react-router-dom"
 
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+const navigate = useNavigate()
 
-  const handleLogin = (e) => {
-    e.preventDefault()
-    console.log({ email, password })
+const handleLogin = async (e) => {
+  e.preventDefault()
+
+  try {
+    const data = await loginUser(email, password)
+
+    localStorage.setItem("token", data.accessToken)
+
+    navigate("/dashboard") // 🔥 redirect
+
+  } catch (error) {
+    alert("Login failed")
   }
+}
 
   return (
     <AuthLayout>

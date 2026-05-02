@@ -5,14 +5,26 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Link } from "react-router-dom"
 import AuthLayout from "../components/AuthLayout"
+import { registerUser } from "../api/authService"
 
 export default function Register() {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
-    console.log("Register:", { email, password })
+
+    try {
+      const data = await registerUser(name, email, password)
+
+      console.log("Register success:", data)
+
+      alert("Account created! Please login.")
+    } catch (error) {
+      console.error("Register failed:", error)
+      alert("Registration failed")
+    }
   }
 
   return (
@@ -31,6 +43,16 @@ export default function Register() {
 
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
+
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                className="bg-white/5 border-white/10 focus:border-purple-500"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name"
+              />
+            </div>
 
             <div className="space-y-2">
               <Label>Email</Label>
