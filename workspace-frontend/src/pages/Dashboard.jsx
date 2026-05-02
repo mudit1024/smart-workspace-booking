@@ -1,23 +1,28 @@
-import { useNavigate } from "react-router-dom"
+import DashboardLayout from "../components/DashboardLayout"
 
 export default function Dashboard() {
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    localStorage.removeItem("token")
-    navigate("/")
-  }
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white gap-4">
-      <h1 className="text-3xl">Dashboard 🚀</h1>
+    <DashboardLayout>
 
-      <button
-        onClick={handleLogout}
-        className="bg-red-500 px-4 py-2 rounded"
-      >
-        Logout
-      </button>
-    </div>
+      <h1 className="text-2xl mb-6">Available Workspaces</h1>
+
+      <div className="grid grid-cols-3 gap-6">
+        
+        {/* Placeholder cards */}
+        <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+          Workspace A
+        </div>
+
+        <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+          Workspace B
+        </div>
+
+        <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+          Workspace C
+        </div>
+
+      </div>
+
+    </DashboardLayout>
   )
 }

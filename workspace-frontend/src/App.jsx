@@ -20,6 +20,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/bookings"
+        element={
+          <ProtectedRoute>
+            <Bookings />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   )
 }
