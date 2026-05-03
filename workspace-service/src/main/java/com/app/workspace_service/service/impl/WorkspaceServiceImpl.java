@@ -183,13 +183,14 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     public List<BookingResponse> getParticipants(UUID slotId) {
-        System.out.println("Inside Service to fetch participants");
         return bookingRepository.findBySlotId(slotId)
                 .stream()
                 .map(b -> BookingResponse.builder()
+                        .bookingId(b.getId())
                         .userId(b.getUserId())
                         .userName(authClient.getUser(b.getUserId()).getName())
                         .status(b.getStatus().name())
+                        .slotId(b.getSlotId())
                         .isHost(b.isHost())
                         .build())
                 .toList();

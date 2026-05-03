@@ -97,7 +97,7 @@ public class WorkspaceController {
     public ResponseEntity<String> approve(
             Authentication auth,
             @PathVariable UUID bookingId) {
-
+        System.out.println("Approve End point hit...");
         String userId = (String) auth.getPrincipal();
 
         service.approveBooking(bookingId, userId);

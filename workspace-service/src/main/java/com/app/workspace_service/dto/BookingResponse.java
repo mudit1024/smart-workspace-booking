@@ -10,7 +10,9 @@ import java.util.UUID;
 @Builder
 public class BookingResponse {
 
+    private UUID bookingId;
     private UUID userId;
+    private UUID slotId;
     private String userName;
     private String status;
     private boolean isHost;
