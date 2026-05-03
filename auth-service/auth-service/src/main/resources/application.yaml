@@ -1,25 +1,17 @@
 spring:
   application:
     name: auth-service
-  datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
-    username: postgres
-    password: admin123
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+  profiles:
+    active: local   # default profile (will override in Render)
+
 jwt:
   secret: 1aMCR3at1n6th15auth5y5t3mf0rmy5martworksp4c3b00k1ngapp
-  access-expiration: 900000        # 15 min
-  refresh-expiration: 86400000     # 1 day
+  access-expiration: 900000
+  refresh-expiration: 86400000
 
 app:
   default-role: USER
-
-server:
-  port: 8081
 
 eureka:
   client:

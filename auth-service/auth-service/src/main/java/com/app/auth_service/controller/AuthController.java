@@ -39,7 +39,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public AuthResponse refresh(@RequestBody RefreshRequest request) {
-
+        System.out.println("Asked for refresh....");
         RefreshToken token = refreshTokenService.verifyToken(request.getRefreshToken());
 
         String accessToken = jwtUtil.generateToken(token.getUserId(), defaultRole);
