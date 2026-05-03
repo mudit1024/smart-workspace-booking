@@ -50,3 +50,18 @@ export const getParticipants = async (slotId) => {
   )
   return res.data
 }
+
+export const approveBooking = async (bookingId) => {
+  console.log("Calling approve API with:", bookingId);
+    const res = await workspaceClient.post(
+        `/workspace/booking/${bookingId}/approve`
+    )
+    return res.data
+}
+
+export const rejectBooking = async (bookingId) => {
+    const res = await workspaceClient.post(
+        `/workspace/booking/${bookingId}/reject`
+    )
+    return res.data
+}

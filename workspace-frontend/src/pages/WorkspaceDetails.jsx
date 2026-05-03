@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import DashboardLayout from "../components/DashboardLayout"
-import { getSlots, bookWorkspace, getParticipants } from "../api/workspaceService"
+import { getSlots, bookWorkspace, getParticipants, approveBooking, rejectBooking } from "../api/workspaceService"
 import { getWorkspaceById } from "../api/workspaceService"
 import { useNavigate } from "react-router-dom"
 import toast from "react-hot-toast"
@@ -29,6 +29,16 @@ export default function WorkspaceDetails() {
     const [participantsMap, setParticipantsMap] = useState({})
     const [loadingParticipants, setLoadingParticipants] = useState({})
     const [openParticipants, setOpenParticipants] = useState({})
+
+    const currentUser = JSON.parse(localStorage.getItem("user"))
+
+    const isHostForSlot = (slotParticipants) => {
+        if (!currentUser || !slotParticipants) return false
+
+        return slotParticipants.some(
+            (p) => p.userId === currentUser.id && (p.host || p.isHost)
+        )
+    }
 
     // ---------------- FETCH DATA ----------------
 
@@ -117,6 +127,35 @@ export default function WorkspaceDetails() {
 
             toast.success("Slot booked")
             fetchSlots()
+
+            // ✅ Update participants UI instantly
+        if (openParticipants[slot.id]) {
+            const currentUser = JSON.parse(localStorage.getItem("user"))
+
+            setParticipantsMap(prev => {
+                const existing = prev[slot.id] || []
+
+                // avoid duplicate entry
+                const alreadyExists = existing.some(
+                    p => p.userId === currentUser.id
+                )
+
+                if (alreadyExists) return prev
+
+                return {
+                    ...prev,
+                    [slot.id]: [
+                        ...existing,
+                        {
+                            userId: currentUser.id,
+                            userName: currentUser.name,
+                            status: slot.openForJoin ? "APPROVED" : "PENDING",
+                            isHost: false
+                        }
+                    ]
+                }
+            })
+        }
 
         } catch (err) {
             const error = err.response?.data
@@ -225,6 +264,43 @@ export default function WorkspaceDetails() {
         }
     }
 
+const handleApprove = async (p, slotId) => {
+    try {
+        await approveBooking(p.bookingId)
+        toast.success("Booking approved")
+
+        setParticipantsMap(prev => ({
+            ...prev,
+            [slotId]: prev[slotId].map(participant =>
+                participant.bookingId === p.bookingId
+                    ? { ...participant, status: "APPROVED" }
+                    : participant
+            )
+        }))
+
+    } catch (err) {
+        toast.error(err.response?.data || "Failed to approve")
+    }
+}
+
+const handleReject = async (bookingId, slotId) => {
+    try {
+        await rejectBooking(bookingId)
+        toast.success("Booking rejected")
+
+        setParticipantsMap(prev => ({
+            ...prev,
+            [slotId]: prev[slotId].map(participant =>
+                participant.bookingId === bookingId
+                    ? { ...participant, status: "REJECTED" }
+                    : participant
+            )
+        }))
+
+    } catch (err) {
+        toast.error(err.response?.data || "Failed to reject")
+    }
+}
 
 
     // ---------------- SAFE RENDER ----------------
@@ -240,19 +316,19 @@ export default function WorkspaceDetails() {
     return (
         <DashboardLayout>
             <h1 className="text-2xl mb-6 flex items-center gap-3">
-    
-    <button
-    onClick={() => window.history.back()}
-    className="w-9 h-9 flex items-center justify-center rounded-full 
-               bg-white/10 hover:bg-white/20 border border-white/10 transition"
->
-    <ChevronLeft size={18} />
-</button>
 
-    <span className="leading-none">
-        Workspace Slots
-    </span>
-</h1>
+                <button
+                    onClick={() => window.history.back()}
+                    className="w-9 h-9 flex items-center justify-center rounded-full 
+               bg-white/10 hover:bg-white/20 border border-white/10 transition"
+                >
+                    <ChevronLeft size={18} />
+                </button>
+
+                <span className="leading-none">
+                    Workspace Slots
+                </span>
+            </h1>
 
             {/* WORKSPACE DETAILS */}
             <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -364,7 +440,7 @@ export default function WorkspaceDetails() {
                                         <p className="text-gray-500">No participants yet</p>
                                     ) : (
                                         participantsMap[slot.id].map((p, idx) => (
-                                            <div key={idx} className="flex justify-between">
+                                            <div key={idx} className="flex justify-between items-center">
                                                 <span>
                                                     {p.userName || p.userId}
                                                     {(p.host || p.host === "true") && " 👑"}
@@ -384,6 +460,24 @@ export default function WorkspaceDetails() {
                                                 >
                                                     {p.isHost ? "HOST" : p.status}
                                                 </span>
+                                                {isHostForSlot(participantsMap[slot.id]) &&
+                                                    p.status === "PENDING" && (
+                                                        <div className="flex gap-2 ml-2">
+                                                            <button
+                                                                onClick={() => handleApprove(p, slot.id)}
+                                                                className="text-xs text-green-400"
+                                                            >
+                                                                Approve
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleReject(p.bookingId, slot.id)}
+                                                                className="text-xs text-red-400"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    )}
                                             </div>
                                         ))
                                     )}
