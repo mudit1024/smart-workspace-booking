@@ -12,6 +12,8 @@ spring:
 server:
   port: ${PORT:8082}
 
+app:
+  frontend-url: ${FRONTEND_URL}
 auth-service:
   url: ${AUTH_SERVICE_URL}
 
