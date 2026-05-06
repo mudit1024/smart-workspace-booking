@@ -29,6 +29,7 @@ export default function WorkspaceDetails() {
     const [participantsMap, setParticipantsMap] = useState({})
     const [loadingParticipants, setLoadingParticipants] = useState({})
     const [openParticipants, setOpenParticipants] = useState({})
+    const [joiningSlotId, setJoiningSlotId] = useState(null)
 
     const currentUser = JSON.parse(localStorage.getItem("user"))
 
@@ -105,7 +106,8 @@ export default function WorkspaceDetails() {
     }
     // ---------------- FILTER LOGIC ----------------
 
-    const filteredSlots = slots.filter((slot) => {
+const filteredSlots = slots
+    .filter((slot) => {
         const available = slot.capacity - slot.bookedCount
 
         if (showOpenOnly && !slot.openForJoin) return false
@@ -113,11 +115,13 @@ export default function WorkspaceDetails() {
 
         return true
     })
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
 
     // ---------------- JOIN EXISTING SLOT ----------------
 
     const handleJoinSlot = async (slot) => {
         try {
+            setJoiningSlotId(slot.id)
             await bookWorkspace({
                 workspaceId: id,
                 startTime: slot.startTime,
@@ -128,14 +132,11 @@ export default function WorkspaceDetails() {
             toast.success("Slot booked")
             fetchSlots()
 
-            // ✅ Update participants UI instantly
-        if (openParticipants[slot.id]) {
             const currentUser = JSON.parse(localStorage.getItem("user"))
 
             setParticipantsMap(prev => {
                 const existing = prev[slot.id] || []
 
-                // avoid duplicate entry
                 const alreadyExists = existing.some(
                     p => p.userId === currentUser.id
                 )
@@ -155,7 +156,6 @@ export default function WorkspaceDetails() {
                     ]
                 }
             })
-        }
 
         } catch (err) {
             const error = err.response?.data
@@ -178,6 +178,21 @@ export default function WorkspaceDetails() {
                     toast.error(error?.message || "Something went wrong")
             }
         }
+        finally {
+            setJoiningSlotId(null)
+        }
+    }
+    const isUserAlreadyInSlot = (slotId) => {
+        const currentUser = JSON.parse(localStorage.getItem("user"))
+
+        if (!currentUser) return false
+
+        const participants = participantsMap[slotId]
+
+        // ❗ If not loaded → cannot determine
+        if (!participants) return false
+
+        return participants.some(p => p.userId === currentUser.id)
     }
 
     // ---------------- CREATE NEW SLOT ----------------
@@ -264,43 +279,43 @@ export default function WorkspaceDetails() {
         }
     }
 
-const handleApprove = async (p, slotId) => {
-    try {
-        await approveBooking(p.bookingId)
-        toast.success("Booking approved")
+    const handleApprove = async (p, slotId) => {
+        try {
+            await approveBooking(p.bookingId)
+            toast.success("Booking approved")
 
-        setParticipantsMap(prev => ({
-            ...prev,
-            [slotId]: prev[slotId].map(participant =>
-                participant.bookingId === p.bookingId
-                    ? { ...participant, status: "APPROVED" }
-                    : participant
-            )
-        }))
+            setParticipantsMap(prev => ({
+                ...prev,
+                [slotId]: prev[slotId].map(participant =>
+                    participant.bookingId === p.bookingId
+                        ? { ...participant, status: "APPROVED" }
+                        : participant
+                )
+            }))
 
-    } catch (err) {
-        toast.error(err.response?.data || "Failed to approve")
+        } catch (err) {
+            toast.error(err.response?.data || "Failed to approve")
+        }
     }
-}
 
-const handleReject = async (bookingId, slotId) => {
-    try {
-        await rejectBooking(bookingId)
-        toast.success("Booking rejected")
+    const handleReject = async (bookingId, slotId) => {
+        try {
+            await rejectBooking(bookingId)
+            toast.success("Booking rejected")
 
-        setParticipantsMap(prev => ({
-            ...prev,
-            [slotId]: prev[slotId].map(participant =>
-                participant.bookingId === bookingId
-                    ? { ...participant, status: "REJECTED" }
-                    : participant
-            )
-        }))
+            setParticipantsMap(prev => ({
+                ...prev,
+                [slotId]: prev[slotId].map(participant =>
+                    participant.bookingId === bookingId
+                        ? { ...participant, status: "REJECTED" }
+                        : participant
+                )
+            }))
 
-    } catch (err) {
-        toast.error(err.response?.data || "Failed to reject")
+        } catch (err) {
+            toast.error(err.response?.data || "Failed to reject")
+        }
     }
-}
 
 
     // ---------------- SAFE RENDER ----------------
@@ -389,108 +404,161 @@ const handleReject = async (bookingId, slotId) => {
                 <p>Loading slots...</p>
             ) : (
                 <div className="grid grid-cols-2 gap-4">
-                    {filteredSlots.map((slot) => (
-                        <div
-                            key={slot.id}
-                            className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition"
-                        >
-                            <p className="text-sm text-gray-400">
-                                {new Date(slot.startTime).toLocaleString("en-GB", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false
-                                })}
-                                {" → "}
-                                {new Date(slot.endTime).toLocaleTimeString("en-GB", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false
-                                })}
-                            </p>
+                    {filteredSlots.map((slot) => {
 
-                            <p className="text-sm mt-2">
-                                👥 {slot.bookedCount}/{slot.capacity}
-                            </p>
+                        const participants = participantsMap[slot.id]
 
-                            <p className={`text-xs mt-1 ${slot.openForJoin ? "text-green-400" : "text-yellow-400"
-                                }`}>
-                                {slot.openForJoin
-                                    ? "Open to Join"
-                                    : "Approval Required"}
-                            </p>
-                            {/* VIEW PARTICIPANTS BUTTON */}
-                            <button
-                                onClick={() => toggleParticipants(slot.id)}
-                                className="mt-3 w-full bg-gray-700 py-1 rounded text-sm"
+                        const alreadyJoined =
+                            participants?.some(p => p.userId === currentUser?.id) || false
+
+                        const isFull = slot.bookedCount >= slot.capacity
+
+                        return (
+                            <div
+                                key={slot.id}
+                                className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition"
                             >
-                                {loadingParticipants[slot.id]
-                                    ? "Loading..."
-                                    : "View Participants"}
-                            </button>
+                                <p className="text-sm text-gray-400">
+                                    {new Date(slot.startTime).toLocaleString("en-GB", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false
+                                    })}
+                                    {" → "}
+                                    {new Date(slot.endTime).toLocaleTimeString("en-GB", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false
+                                    })}
+                                </p>
 
-                            {/* PARTICIPANTS LIST */}
-                            {openParticipants[slot.id] && participantsMap[slot.id] && (
-                                <div className="mt-2 text-xs text-gray-300 border-t border-white/10 pt-2">
-                                    <p className="text-gray-400 mb-1">Participants:</p>
+                                <p className="text-sm mt-2">
+                                    👥 {slot.bookedCount}/{slot.capacity}
+                                </p>
 
-                                    {participantsMap[slot.id].length === 0 ? (
-                                        <p className="text-gray-500">No participants yet</p>
-                                    ) : (
-                                        participantsMap[slot.id].map((p, idx) => (
-                                            <div key={idx} className="flex justify-between items-center">
-                                                <span>
-                                                    {p.userName || p.userId}
-                                                    {(p.host || p.host === "true") && " 👑"}
-                                                </span>
-                                                <span
-                                                    className={
-                                                        p.isHost
-                                                            ? "text-green-400"
-                                                            : p.status === "APPROVED"
+                                <p className={`text-xs mt-1 ${slot.openForJoin ? "text-green-400" : "text-yellow-400"
+                                    }`}>
+                                    {slot.openForJoin
+                                        ? "Open to Join"
+                                        : "Approval Required"}
+                                </p>
+                                {/* VIEW PARTICIPANTS BUTTON */}
+                                <button
+                                    onClick={() => toggleParticipants(slot.id)}
+                                    className="mt-3 w-full bg-gray-700 py-1 rounded text-sm"
+                                >
+                                    {loadingParticipants[slot.id]
+                                        ? "Loading..."
+                                        : "View Participants"}
+                                </button>
+
+                                {/* PARTICIPANTS LIST */}
+                                {openParticipants[slot.id] && participantsMap[slot.id] && (
+                                    <div className="mt-2 text-xs text-gray-300 border-t border-white/10 pt-2">
+                                        <p className="text-gray-400 mb-1">Participants:</p>
+
+                                        {participantsMap[slot.id].length === 0 ? (
+                                            <p className="text-gray-500">No participants yet</p>
+                                        ) : (
+                                            participantsMap[slot.id].map((p, idx) => (
+                                                <div key={idx} className="flex justify-between items-center">
+                                                    <span>
+                                                        {p.userName || p.userId}
+                                                        {(p.host || p.host === "true") && " 👑"}
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            p.isHost
                                                                 ? "text-green-400"
-                                                                : p.status === "PENDING"
-                                                                    ? "text-yellow-400"
-                                                                    : p.status === "REJECTED"
-                                                                        ? "text-red-400"
-                                                                        : "text-gray-400"
-                                                    }
-                                                >
-                                                    {p.isHost ? "HOST" : p.status}
-                                                </span>
-                                                {isHostForSlot(participantsMap[slot.id]) &&
-                                                    p.status === "PENDING" && (
-                                                        <div className="flex gap-2 ml-2">
-                                                            <button
-                                                                onClick={() => handleApprove(p, slot.id)}
-                                                                className="text-xs text-green-400"
-                                                            >
-                                                                Approve
-                                                            </button>
+                                                                : p.status === "APPROVED"
+                                                                    ? "text-green-400"
+                                                                    : p.status === "PENDING"
+                                                                        ? "text-yellow-400"
+                                                                        : p.status === "REJECTED"
+                                                                            ? "text-red-400"
+                                                                            : "text-gray-400"
+                                                        }
+                                                    >
+                                                        {p.isHost ? "HOST" : p.status}
+                                                    </span>
+                                                    {isHostForSlot(participantsMap[slot.id]) &&
+                                                        p.status === "PENDING" && (
+                                                            <div className="flex gap-2 ml-2">
+                                                                <button
+                                                                    onClick={() => handleApprove(p, slot.id)}
+                                                                    className="text-xs text-green-400"
+                                                                >
+                                                                    Approve
+                                                                </button>
 
-                                                            <button
-                                                                onClick={() => handleReject(p.bookingId, slot.id)}
-                                                                className="text-xs text-red-400"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            )}
-                            <button
-                                onClick={() => handleJoinSlot(slot)}
-                                className="mt-3 w-full bg-purple-600 py-1 rounded text-sm"
-                            >
-                                Join Slot
-                            </button>
-                        </div>
-                    ))}
+                                                                <button
+                                                                    onClick={() => handleReject(p.bookingId, slot.id)}
+                                                                    className="text-xs text-red-400"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={async () => {
+
+                                        // 👉 Lazy load participants if not present
+                                        if (!participantsMap[slot.id]) {
+                                            try {
+                                                const data = await getParticipants(slot.id)
+
+                                                setParticipantsMap(prev => ({
+                                                    ...prev,
+                                                    [slot.id]: data
+                                                }))
+
+                                                const already = data.some(p => p.userId === currentUser?.id)
+
+                                                if (already) {
+                                                    toast("Already joined")
+                                                    return
+                                                }
+
+                                            } catch {
+                                                toast.error("Failed to verify slot")
+                                                return
+                                            }
+                                        }
+
+                                        handleJoinSlot(slot)
+                                    }}
+                                    disabled={
+                                        joiningSlotId === slot.id ||
+                                        alreadyJoined ||
+                                        isFull
+                                    }
+                                    className={`mt-3 w-full py-1 rounded text-sm transition
+        ${alreadyJoined || isFull
+                                            ? "bg-gray-600 cursor-not-allowed"
+                                            : joiningSlotId === slot.id
+                                                ? "bg-gray-500 cursor-not-allowed"
+                                                : "bg-purple-600 hover:bg-purple-700"
+                                        }`}
+                                >
+                                    {isFull
+                                        ? "Full"
+                                        : alreadyJoined
+                                            ? "Already Joined"
+                                            : joiningSlotId === slot.id
+                                                ? "Joining..."
+                                                : "Join Slot"}
+                                </button>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 

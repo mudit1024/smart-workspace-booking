@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { getMyBookings } from "../api/bookingService"
+import { cancelBooking } from "../api/workspaceService"
 import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 
@@ -19,7 +20,6 @@ export default function MyBookings() {
   const fetchBookings = async () => {
     try {
       const data = await getMyBookings()
-      console.log(data)
       setBookings(data)
     } catch (err) {
       console.error("Failed to fetch bookings", err)
@@ -51,6 +51,27 @@ export default function MyBookings() {
         return "bg-red-500/10 text-red-400 border-red-500/20"
       default:
         return "bg-gray-500/10 text-gray-400 border-gray-500/20"
+    }
+  }
+
+  const handleCancel = async (bookingId) => {
+    try {
+      await cancelBooking(bookingId)
+
+      toast.success("Booking cancelled")
+
+      // ✅ Update UI instantly (NO RELOAD)
+      setBookings(prev =>
+        prev.map(b =>
+          b.bookingId === bookingId
+            ? { ...b, status: "CANCELLED" }
+            : b
+        )
+      )
+
+    } catch (err) {
+      console.error("Cancel failed", err)
+      toast.error(err.response?.data || "Failed to cancel booking")
     }
   }
 
@@ -87,12 +108,28 @@ export default function MyBookings() {
               </p>
 
               {/* Status Badge */}
-              <div className="mt-3">
+              <div className="mt-3 flex items-center gap-2">
+
+                {/* STATUS BADGE */}
                 <span
                   className={`px-3 py-1 text-xs rounded-full border ${getStatusStyle(b.status)}`}
                 >
                   {b.status}
                 </span>
+
+                {/* CANCEL BUTTON */}
+                <button
+                  onClick={() => handleCancel(b.bookingId)}
+                  disabled={b.status === "CANCELLED"}
+                  className={`px-3 py-1 text-xs rounded-full border transition
+            ${b.status === "CANCELLED"
+                      ? "border-gray-500/20 bg-gray-500/10 text-gray-500 cursor-not-allowed"
+                      : "border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                    }`}
+                >
+                  Cancel
+                </button>
+
               </div>
 
               {/* Booking ID (subtle) */}

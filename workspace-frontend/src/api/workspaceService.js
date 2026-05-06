@@ -65,3 +65,9 @@ export const rejectBooking = async (bookingId) => {
     )
     return res.data
 }
+export const cancelBooking = async (bookingId) => {
+    const response = await workspaceClient.post(
+        `/workspace/booking/${bookingId}/cancel`
+    )
+    return response.data
+}

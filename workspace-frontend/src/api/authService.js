@@ -18,3 +18,14 @@ export const registerUser = async (name, email, password) => {
 
   return response.data
 }
+
+export const refreshAccessToken = async () => {
+  console.log("Asked for refresh...")
+  const refreshToken = localStorage.getItem("refreshToken")
+
+  const response = await authClient.post("/auth/refresh", {
+    refreshToken
+  })
+
+  return response.data
+}

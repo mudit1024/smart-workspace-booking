@@ -8,3 +8,4 @@ export const getMyBookings = async () => {
     const response = await workspaceClient.get("/bookings/my")
     return response.data
 }
+

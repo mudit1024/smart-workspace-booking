@@ -22,15 +22,22 @@ export default function Dashboard() {
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [showCreateModal, setShowCreateModal] = useState(false)
 
+  const [searchTerm, setSearchTerm] = useState("")
+
+
   const uniqueTypes = [
     "ALL",
     ...new Set(workspaces.map(ws => ws.type).filter(Boolean))
   ]
-  const filteredWorkspaces =
-    typeFilter === "ALL"
-      ? workspaces
-      : workspaces.filter(ws => ws.type === typeFilter)
+const filteredWorkspaces = workspaces.filter((ws) => {
+  const matchesType =
+    typeFilter === "ALL" || ws.type === typeFilter
 
+  const matchesSearch =
+    ws.name?.toLowerCase().includes(searchTerm.toLowerCase())
+
+  return matchesType && matchesSearch
+})
 
   useEffect(() => {
     fetchWorkspaces()
@@ -105,24 +112,26 @@ export default function Dashboard() {
 
 
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-end mb-6">
 
         {/* Filters */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-end">
 
-          {/* Location filter (backend) */}
+          {/* Location */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">
-              Location
-            </label>
+            <label className="text-xs text-gray-400 mb-1">Location</label>
 
             <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              className={`p-2 rounded bg-white/5 border border-white/10 text-white
-                focus:outline-none focus:ring-2 focus:ring-purple-500
-                appearance-none
-                ${loadingLocations ? "animate-pulse" : ""}`}
+              className={`
+          h-[40px] px-3
+          rounded-lg
+          bg-white/5 border border-white/10 text-white
+          focus:outline-none focus:ring-2 focus:ring-purple-500
+          appearance-none
+          ${loadingLocations ? "animate-pulse" : ""}
+        `}
             >
               {loadingLocations ? (
                 <option>Loading...</option>
@@ -136,17 +145,20 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Type filter (frontend) */}
+          {/* Type */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">
-              Type
-            </label>
+            <label className="text-xs text-gray-400 mb-1">Type</label>
+
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="p-2 rounded bg-white/5 border border-white/10 text-white 
-             focus:outline-none focus:ring-2 focus:ring-purple-500
-             appearance-none"
+              className="
+          h-[40px] px-3
+          rounded-lg
+          bg-white/5 border border-white/10 text-white
+          focus:outline-none focus:ring-2 focus:ring-purple-500
+          appearance-none
+        "
             >
               {uniqueTypes.map((t) => (
                 <option key={t} value={t} className="bg-black text-white">
@@ -156,15 +168,36 @@ export default function Dashboard() {
             </select>
           </div>
 
+          {/* Search */}
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-400 mb-1 opacity-0">Search</label>
+
+            <input
+              type="text"
+              placeholder="Search workspace by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="
+          h-[40px] px-4
+          rounded-full
+          bg-white/5 border border-white/10
+          text-white w-[750px]
+          focus:outline-none focus:ring-2 focus:ring-purple-500
+          placeholder-gray-400
+        "
+            />
+          </div>
+          {/* Button */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 px-4 rounded"
+          >
+            + Create Workspace
+          </button>
+
         </div>
 
-        {/* Create Button */}
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded"
-        >
-          + Create Workspace
-        </button>
+
 
       </div>
       {loading ? (
@@ -233,7 +266,8 @@ export default function Dashboard() {
 
               <button
                 onClick={() => {
-                  setShowCreateModal(false)}}
+                  setShowCreateModal(false)
+                }}
                 className="text-gray-400"
               >
                 Cancel

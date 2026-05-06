@@ -9,10 +9,11 @@ authClient.interceptors.request.use((config) => {
 
   // ❗ Don't attach token for login/register
   if (
-    token &&
-    !config.url.includes("/auth/login") &&
-    !config.url.includes("/auth/register")
-  ) {
+  token &&
+  !config.url.includes("/auth/login") &&
+  !config.url.includes("/auth/register") &&
+  !config.url.includes("/auth/refresh")  
+) {
     config.headers.Authorization = `Bearer ${token}`
   }
 

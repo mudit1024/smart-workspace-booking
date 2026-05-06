@@ -12,33 +12,34 @@ import { useNavigate } from "react-router-dom"
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-const navigate = useNavigate()
+  const navigate = useNavigate()
 
-const handleLogin = async (e) => {
-  e.preventDefault()
+  const handleLogin = async (e) => {
+    e.preventDefault()
 
-  try {
-    const data = await loginUser(email, password)
+    try {
+      const data = await loginUser(email, password)
 
-    // token
-    localStorage.setItem("token", data.accessToken)
+      // token
+      localStorage.setItem("token", data.accessToken)
+      localStorage.setItem("refreshToken", data.refreshToken)
 
-    // 👤 user info (IMPORTANT FIX)
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        id: data.userId,
-        name: data.name,
-        email: data.email
-      })
-    )
+      // 👤 user info (IMPORTANT FIX)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          id: data.userId,
+          name: data.name,
+          email: data.email
+        })
+      )
 
-    navigate("/dashboard")
+      navigate("/dashboard")
 
-  } catch (error) {
-    alert("Login failed")
+    } catch (error) {
+      alert("Login failed")
+    }
   }
-}
 
   return (
     <AuthLayout>
