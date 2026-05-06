@@ -18,3 +18,5 @@ eureka:
     enable: false
     service-url:
       defaultZone: http://localhost:8761/eureka/
+server:
+  port: ${PORT:8081}
