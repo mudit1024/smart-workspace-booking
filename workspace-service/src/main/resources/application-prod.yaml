@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+server:
+  port: ${PORT:8080}
+
+auth-service:
+  url: ${AUTH_SERVICE_URL}
+
+jwt:
+  secret: 1aMCR3at1n6th15auth5y5t3mf0rmy5martworksp4c3b00k1ngapp
