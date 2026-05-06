@@ -15,6 +15,9 @@ logging:
   level:
     root: INFO
 
+app:
+  frontend-url: ${FRONTEND_URL}
+
 eureka:
   client:
     service-url:

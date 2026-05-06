@@ -11,6 +11,7 @@ jwt:
   refresh-expiration: 86400000
 
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   default-role: USER
 
 eureka:
