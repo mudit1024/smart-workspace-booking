@@ -93,7 +93,7 @@ export default function DashboardLayout({ children }) {
           top-0
           left-0
           z-50
-          h-screen
+          h-dvh
           w-[260px]
           bg-[#0b0b0b]
           border-r
@@ -106,6 +106,7 @@ export default function DashboardLayout({ children }) {
           transition-transform
           duration-300
           overflow-hidden
+          overflow-y-auto
 
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
