@@ -27,12 +27,24 @@ export default function DashboardLayout({ children }) {
 
   return (
 
-    <div className="min-h-screen bg-black text-white flex overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white overflow-hidden">
 
       {/* MOBILE MENU BUTTON */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-white/10 p-2 rounded-lg border border-white/10"
+        className="
+          lg:hidden
+          fixed
+          top-4
+          left-4
+          z-50
+          bg-white/10
+          backdrop-blur-md
+          p-2
+          rounded-lg
+          border
+          border-white/10
+        "
       >
         <Menu size={22} />
       </button>
@@ -75,16 +87,26 @@ export default function DashboardLayout({ children }) {
       )}
 
       {/* SIDEBAR */}
-      <div
+      <aside
         className={`
-          fixed lg:static top-0 left-0 z-50
+          fixed
+          top-0
+          left-0
+          z-50
           h-screen
           w-[260px]
           bg-[#0b0b0b]
-          border-r border-white/10
+          border-r
+          border-white/10
           p-6
-          flex flex-col justify-between
-          transform transition-transform duration-300
+          flex
+          flex-col
+          justify-between
+          transform
+          transition-transform
+          duration-300
+          overflow-hidden
+
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
         `}
@@ -93,10 +115,10 @@ export default function DashboardLayout({ children }) {
         {/* TOP SECTION */}
         <div>
 
-          {/* MOBILE CLOSE BUTTON */}
-          <div className="flex items-center justify-between lg:block">
+          {/* HEADER */}
+          <div className="flex items-center justify-between mb-8">
 
-            <h1 className="text-xl font-light mb-8">
+            <h1 className="text-xl font-light">
               Smart Workspace
             </h1>
 
@@ -126,7 +148,6 @@ export default function DashboardLayout({ children }) {
                 bg-white/5
                 hover:bg-purple-600/20
                 transition
-                break-words
               "
             >
               Dashboard
@@ -146,7 +167,6 @@ export default function DashboardLayout({ children }) {
                 bg-white/5
                 hover:bg-purple-600/20
                 transition
-                break-words
               "
             >
               My Bookings
@@ -158,44 +178,45 @@ export default function DashboardLayout({ children }) {
 
         {/* LOGOUT */}
         <button
-          onClick={handleLogout}
-          className="
-            w-full
-            mt-8
-            text-left
-            px-4
-            py-3
-            rounded-xl
-            bg-red-500/10
-            text-red-400
-            hover:bg-red-500/20
-            transition
-          "
-        >
-          Logout
-        </button>
+  onClick={handleLogout}
+  className="
+    w-full
+    px-4
+    py-3
+    rounded-xl
+    bg-red-500/10
+    text-red-400
+    hover:bg-red-500/20
+    transition
+    flex
+    items-center
+    justify-center
+    text-center
+  "
+>
+  Logout
+</button>
 
-      </div>
+      </aside>
 
       {/* MAIN CONTENT */}
-      <div
+      <main
         className="
-          flex-1
-          w-full
-          min-w-0
+          h-screen
+          overflow-y-auto
+          lg:ml-[260px]
           px-4
           sm:px-6
           lg:px-8
           pt-20
           lg:pt-8
           pb-8
-          overflow-x-hidden
         "
       >
         <div className="w-full max-w-full">
           {children}
         </div>
-      </div>
+      </main>
 
     </div>
   )
