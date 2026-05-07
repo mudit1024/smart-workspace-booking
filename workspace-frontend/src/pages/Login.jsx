@@ -11,21 +11,25 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 export default function Login() {
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
+
     e.preventDefault()
 
     try {
+
       const data = await loginUser(email, password)
 
       // token
       localStorage.setItem("token", data.accessToken)
       localStorage.setItem("refreshToken", data.refreshToken)
 
-      // 👤 user info
+      // user info
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -40,69 +44,165 @@ export default function Login() {
       navigate("/dashboard")
 
     } catch (error) {
+
       console.error(error)
+
       toast.error("Login failed")
     }
   }
 
   return (
+
     <AuthLayout>
 
-      <Card className="w-[420px] bg-white/5 backdrop-blur-xl border border-white/10 text-white shadow-2xl">
+      <div
+        className="
+          w-full
+          min-h-screen
+          flex
+          items-start
+          justify-center
+          px-4
+          pt-10
+          sm:pt-16
+        "
+      >
 
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-light tracking-wide">
-            Smart Workspace
-          </CardTitle>
+        <Card
+  className="
+    w-[92vw]
+    sm:w-[85vw]
+    md:w-[650px]
+    lg:w-[720px]
+    xl:w-[760px]
+    max-w-none
+    bg-white/5
+    backdrop-blur-xl
+    border
+    border-white/10
+    text-white
+    shadow-2xl
+  "
+>
 
-          <p className="text-center text-sm text-gray-400">
-            Access your workspace dashboard
-          </p>
-        </CardHeader>
+          <CardHeader className="px-4 sm:px-4 md:px-6 pb-7">
 
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+            <CardTitle
+              className="
+                text-center
+                text-2xl
+                sm:text-3xl
+                font-light
+                tracking-wide
+              "
+            >
+              Smart Workspace
+            </CardTitle>
 
-            <div className="space-y-2">
-              <Label>Email</Label>
-
-              <Input
-                className="bg-white/5 border-white/10 focus:border-purple-500"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Password</Label>
-
-              <Input
-                type="password"
-                className="bg-white/5 border-white/10 focus:border-purple-500"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            <motion.div whileHover={{ scale: 1.02 }}>
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 transition-all">
-                Sign In
-              </Button>
-            </motion.div>
-
-            <p className="text-center text-sm text-gray-400 mt-4">
-              New here?{" "}
-              <Link to="/register" className="text-blue-400">
-                Create account
-              </Link>
+            <p className="text-center text-sm text-gray-400 mt-2">
+              Access your workspace dashboard
             </p>
 
-          </form>
-        </CardContent>
+          </CardHeader>
 
-      </Card>
+          <CardContent className="px-4 sm:px-4 md:px-6 pb-7">
+
+            <form
+              onSubmit={handleLogin}
+              className="space-y-5"
+            >
+
+              {/* EMAIL */}
+              <div className="space-y-2">
+
+                <Label>Email</Label>
+
+                <Input
+                  className="
+                    h-11
+                    bg-white/5
+                    border-white/10
+                    focus:border-purple-500
+                    text-sm
+                    sm:text-base
+                  "
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                />
+
+              </div>
+
+              {/* PASSWORD */}
+              <div className="space-y-2">
+
+                <Label>Password</Label>
+
+                <Input
+                  type="password"
+                  className="
+                    h-11
+                    bg-white/5
+                    border-white/10
+                    focus:border-purple-500
+                    text-sm
+                    sm:text-base
+                  "
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+
+              </div>
+
+              {/* BUTTON */}
+              <motion.div whileHover={{ scale: 1.02 }}>
+
+                <Button
+                  className="
+                    w-full
+                    h-11
+                    bg-gradient-to-r
+                    from-purple-600
+                    to-blue-600
+                    hover:opacity-90
+                    transition-all
+                    text-sm
+                    sm:text-base
+                  "
+                >
+                  Sign In
+                </Button>
+
+              </motion.div>
+
+              {/* REGISTER */}
+              <p
+                className="
+                  text-center
+                  text-sm
+                  text-gray-400
+                  pt-2
+                "
+              >
+                New here?{" "}
+
+                <Link
+                  to="/register"
+                  className="text-blue-400"
+                >
+                  Create account
+                </Link>
+
+              </p>
+
+            </form>
+
+          </CardContent>
+
+        </Card>
+
+      </div>
 
     </AuthLayout>
   )

@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { ChevronLeft } from "lucide-react"
 
 export default function WorkspaceDetails() {
+
   const navigate = useNavigate()
   const { id } = useParams()
 
@@ -31,7 +32,7 @@ export default function WorkspaceDetails() {
   const [showOpenOnly, setShowOpenOnly] = useState(false)
   const [minAvailable, setMinAvailable] = useState(0)
 
-  //participants
+  // participants
   const [participantsMap, setParticipantsMap] = useState({})
   const [loadingParticipants, setLoadingParticipants] = useState({})
   const [openParticipants, setOpenParticipants] = useState({})
@@ -67,8 +68,11 @@ export default function WorkspaceDetails() {
   const fetchSlots = async () => {
     try {
       setLoading(true)
+
       const data = await getSlots(id)
+
       setSlots(data)
+
     } catch (err) {
       console.error("Failed to fetch slots", err)
       toast.error("Failed to load slots")
@@ -88,9 +92,13 @@ export default function WorkspaceDetails() {
       return
     }
 
-    // OPEN + FETCH if not loaded yet
+    // OPEN + FETCH
     try {
-      setLoadingParticipants(prev => ({ ...prev, [slotId]: true }))
+
+      setLoadingParticipants(prev => ({
+        ...prev,
+        [slotId]: true
+      }))
 
       const data = await getParticipants(slotId)
 
@@ -107,7 +115,11 @@ export default function WorkspaceDetails() {
     } catch (err) {
       toast.error("Failed to load participants")
     } finally {
-      setLoadingParticipants(prev => ({ ...prev, [slotId]: false }))
+
+      setLoadingParticipants(prev => ({
+        ...prev,
+        [slotId]: false
+      }))
     }
   }
 
@@ -115,6 +127,7 @@ export default function WorkspaceDetails() {
 
   const filteredSlots = slots
     .filter((slot) => {
+
       const available = slot.capacity - slot.bookedCount
 
       if (showOpenOnly && !slot.openForJoin) return false
@@ -127,7 +140,9 @@ export default function WorkspaceDetails() {
   // ---------------- JOIN EXISTING SLOT ----------------
 
   const handleJoinSlot = async (slot) => {
+
     try {
+
       setJoiningSlotId(slot.id)
 
       await bookWorkspace({
@@ -144,6 +159,7 @@ export default function WorkspaceDetails() {
       const currentUser = JSON.parse(localStorage.getItem("user"))
 
       setParticipantsMap(prev => {
+
         const existing = prev[slot.id] || []
 
         const alreadyExists = existing.some(
@@ -167,6 +183,7 @@ export default function WorkspaceDetails() {
       })
 
     } catch (err) {
+
       const error = err.response?.data
 
       switch (error?.error) {
@@ -186,44 +203,35 @@ export default function WorkspaceDetails() {
         default:
           toast.error(error?.message || "Something went wrong")
       }
+
     } finally {
       setJoiningSlotId(null)
     }
   }
 
-  const isUserAlreadyInSlot = (slotId) => {
-    const currentUser = JSON.parse(localStorage.getItem("user"))
-
-    if (!currentUser) return false
-
-    const participants = participantsMap[slotId]
-
-    if (!participants) return false
-
-    return participants.some(p => p.userId === currentUser.id)
-  }
-
   // ---------------- CREATE NEW SLOT ----------------
 
   const handleCreateSlot = async () => {
+
     try {
+
       const start = new Date(startTime)
       const end = new Date(endTime)
       const now = new Date()
 
-      // ❌ 1. Start must be in future
+      // Start must be future
       if (start <= now) {
         toast.error("Start time must be in the future")
         return
       }
 
-      // ❌ 2. End must be after start
+      // End after start
       if (end <= start) {
         toast.error("End time must be after start time")
         return
       }
 
-      // ❌ 3. Max 48 hours rule
+      // 48 hour limit
       const maxTime = new Date(now.getTime() + 48 * 60 * 60 * 1000)
 
       if (start > maxTime) {
@@ -231,7 +239,7 @@ export default function WorkspaceDetails() {
         return
       }
 
-      // ❌ 4. Duration limit
+      // Duration limit
       const durationInHours = (end - start) / (1000 * 60 * 60)
 
       if (durationInHours > 8) {
@@ -239,7 +247,7 @@ export default function WorkspaceDetails() {
         return
       }
 
-      // ❌ 5. Overlapping slot check
+      // Overlap check
       const overlappingSlot = slots.find(slot => {
         return (
           start < new Date(slot.endTime) &&
@@ -248,15 +256,14 @@ export default function WorkspaceDetails() {
       })
 
       if (overlappingSlot) {
-        toast.error("Slot already exists in this time range. Please join instead.")
+        toast.error("Slot already exists in this time range")
         return
       }
 
-      // ✅ API CALL
       const payload = {
         workspaceId: id,
-        startTime: startTime,
-        endTime: endTime,
+        startTime,
+        endTime,
         openForJoin
       }
 
@@ -269,6 +276,7 @@ export default function WorkspaceDetails() {
       fetchSlots()
 
     } catch (err) {
+
       const error = err.response?.data
 
       switch (error?.error) {
@@ -292,7 +300,9 @@ export default function WorkspaceDetails() {
   }
 
   const handleApprove = async (p, slotId) => {
+
     try {
+
       await approveBooking(p.bookingId)
 
       toast.success("Booking approved")
@@ -312,7 +322,9 @@ export default function WorkspaceDetails() {
   }
 
   const handleReject = async (bookingId, slotId) => {
+
     try {
+
       await rejectBooking(bookingId)
 
       toast.success("Booking rejected")
@@ -342,41 +354,61 @@ export default function WorkspaceDetails() {
   }
 
   return (
+
     <DashboardLayout>
-      <h1 className="text-2xl mb-6 flex items-center gap-3">
+
+      {/* HEADER */}
+      <div className="flex items-center gap-3 mb-6">
 
         <button
           onClick={() => window.history.back()}
-          className="w-9 h-9 flex items-center justify-center rounded-full 
-          bg-white/10 hover:bg-white/20 border border-white/10 transition"
+          className="w-9 h-9 flex items-center justify-center rounded-full
+          bg-white/10 hover:bg-white/20 border border-white/10 transition shrink-0"
         >
           <ChevronLeft size={18} />
         </button>
 
-        <span className="leading-none">
+        <h1 className="text-xl sm:text-2xl font-semibold">
           Workspace Slots
-        </span>
-      </h1>
+        </h1>
+
+      </div>
 
       {/* WORKSPACE DETAILS */}
       <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-        <h2 className="text-xl font-medium">{workspace.name}</h2>
 
-        <div className="flex gap-6 mt-2 text-sm text-gray-400">
-          <p>📍 {workspace.location}</p>
-          <p>👥 Capacity: {workspace.capacity}</p>
-          <p>🏷 Type: {workspace.type}</p>
+        <h2 className="text-lg sm:text-xl font-medium break-words">
+          {workspace.name}
+        </h2>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-6 mt-3 text-sm text-gray-400">
+
+          <p className="break-words">
+            📍 {workspace.location}
+          </p>
+
+          <p>
+            👥 Capacity: {workspace.capacity}
+          </p>
+
+          <p>
+            🏷 Type: {workspace.type}
+          </p>
+
         </div>
       </div>
 
-      {/* FILTERS + ACTION */}
-      <div className="flex justify-between items-end mb-6">
+      {/* FILTERS */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
 
-        <div className="flex gap-6">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
 
           {/* OPEN SLOT TOGGLE */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">Open Slots</label>
+
+            <label className="text-xs text-gray-400 mb-1">
+              Open Slots
+            </label>
 
             <button
               onClick={() => setShowOpenOnly(prev => !prev)}
@@ -388,18 +420,23 @@ export default function WorkspaceDetails() {
                 ${showOpenOnly ? "translate-x-[44px]" : ""}`}
               />
             </button>
+
           </div>
 
           {/* MIN AVAILABLE */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1">Min Available</label>
+
+            <label className="text-xs text-gray-400 mb-1">
+              Min Available
+            </label>
 
             <input
               type="number"
               value={minAvailable}
               onChange={(e) => setMinAvailable(Number(e.target.value))}
-              className="p-2 rounded bg-white/5 border border-white/10 text-white w-[100px]"
+              className="p-2 rounded bg-white/5 border border-white/10 text-white w-full sm:w-[100px]"
             />
+
           </div>
 
         </div>
@@ -407,17 +444,21 @@ export default function WorkspaceDetails() {
         {/* CREATE BUTTON */}
         <button
           onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded"
+          className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded"
         >
           + Pick New Slot
         </button>
+
       </div>
 
       {/* SLOT LIST */}
       {loading ? (
+
         <p>Loading slots...</p>
+
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
           {filteredSlots.map((slot) => {
 
@@ -429,11 +470,15 @@ export default function WorkspaceDetails() {
             const isFull = slot.bookedCount >= slot.capacity
 
             return (
+
               <div
                 key={slot.id}
                 className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500 transition"
               >
-                <p className="text-sm text-gray-400">
+
+                {/* TIME */}
+                <p className="text-sm text-gray-400 break-words">
+
                   {new Date(slot.startTime).toLocaleString("en-GB", {
                     day: "2-digit",
                     month: "2-digit",
@@ -442,32 +487,39 @@ export default function WorkspaceDetails() {
                     minute: "2-digit",
                     hour12: false
                   })}
+
                   {" → "}
+
                   {new Date(slot.endTime).toLocaleTimeString("en-GB", {
                     hour: "2-digit",
                     minute: "2-digit",
                     hour12: false
                   })}
+
                 </p>
 
+                {/* CAPACITY */}
                 <p className="text-sm mt-2">
                   👥 {slot.bookedCount}/{slot.capacity}
                 </p>
 
+                {/* STATUS */}
                 <p className={`text-xs mt-1 ${
                   slot.openForJoin
                     ? "text-green-400"
                     : "text-yellow-400"
                 }`}>
+
                   {slot.openForJoin
                     ? "Open to Join"
                     : "Approval Required"}
+
                 </p>
 
                 {/* VIEW PARTICIPANTS BUTTON */}
                 <button
                   onClick={() => toggleParticipants(slot.id)}
-                  className="mt-3 w-full bg-gray-700 py-1 rounded text-sm"
+                  className="mt-3 w-full bg-gray-700 py-2 rounded text-sm"
                 >
                   {loadingParticipants[slot.id]
                     ? "Loading..."
@@ -476,75 +528,98 @@ export default function WorkspaceDetails() {
 
                 {/* PARTICIPANTS LIST */}
                 {openParticipants[slot.id] && participantsMap[slot.id] && (
-                  <div className="mt-2 text-xs text-gray-300 border-t border-white/10 pt-2">
 
-                    <p className="text-gray-400 mb-1">
+                  <div className="mt-3 text-xs text-gray-300 border-t border-white/10 pt-3">
+
+                    <p className="text-gray-400 mb-2">
                       Participants:
                     </p>
 
                     {participantsMap[slot.id].length === 0 ? (
+
                       <p className="text-gray-500">
                         No participants yet
                       </p>
+
                     ) : (
-                      participantsMap[slot.id].map((p, idx) => (
-                        <div
-                          key={idx}
-                          className="flex justify-between items-center"
-                        >
-                          <span>
-                            {p.userName || p.userId}
-                            {(p.host || p.host === "true") && " 👑"}
-                          </span>
 
-                          <span
-                            className={
-                              p.isHost
-                                ? "text-green-400"
-                                : p.status === "APPROVED"
-                                  ? "text-green-400"
-                                  : p.status === "PENDING"
-                                    ? "text-yellow-400"
-                                    : p.status === "REJECTED"
-                                      ? "text-red-400"
-                                      : "text-gray-400"
-                            }
+                      <div className="space-y-3">
+
+                        {participantsMap[slot.id].map((p, idx) => (
+
+                          <div
+                            key={idx}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white/5 p-2 rounded-lg"
                           >
-                            {p.isHost ? "HOST" : p.status}
-                          </span>
 
-                          {isHostForSlot(participantsMap[slot.id]) &&
-                            p.status === "PENDING" && (
-                              <div className="flex gap-2 ml-2">
+                            <div className="break-words">
 
-                                <button
-                                  onClick={() => handleApprove(p, slot.id)}
-                                  className="text-xs text-green-400"
-                                >
-                                  Approve
-                                </button>
+                              <span>
+                                {p.userName || p.userId}
+                                {(p.host || p.host === "true") && " 👑"}
+                              </span>
 
-                                <button
-                                  onClick={() => handleReject(p.bookingId, slot.id)}
-                                  className="text-xs text-red-400"
-                                >
-                                  Reject
-                                </button>
+                            </div>
 
-                              </div>
-                            )}
-                        </div>
-                      ))
+                            <div className="flex flex-wrap items-center gap-2">
+
+                              <span
+                                className={
+                                  p.isHost
+                                    ? "text-green-400"
+                                    : p.status === "APPROVED"
+                                      ? "text-green-400"
+                                      : p.status === "PENDING"
+                                        ? "text-yellow-400"
+                                        : p.status === "REJECTED"
+                                          ? "text-red-400"
+                                          : "text-gray-400"
+                                }
+                              >
+                                {p.isHost ? "HOST" : p.status}
+                              </span>
+
+                              {isHostForSlot(participantsMap[slot.id]) &&
+                                p.status === "PENDING" && (
+
+                                  <div className="flex gap-2">
+
+                                    <button
+                                      onClick={() => handleApprove(p, slot.id)}
+                                      className="text-xs text-green-400"
+                                    >
+                                      Approve
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleReject(p.bookingId, slot.id)}
+                                      className="text-xs text-red-400"
+                                    >
+                                      Reject
+                                    </button>
+
+                                  </div>
+                                )}
+
+                            </div>
+
+                          </div>
+                        ))}
+
+                      </div>
                     )}
+
                   </div>
                 )}
 
+                {/* JOIN BUTTON */}
                 <button
                   onClick={async () => {
 
-                    // 👉 Lazy load participants if not present
                     if (!participantsMap[slot.id]) {
+
                       try {
+
                         const data = await getParticipants(slot.id)
 
                         setParticipantsMap(prev => ({
@@ -576,7 +651,7 @@ export default function WorkspaceDetails() {
                     isFull
                   }
 
-                  className={`mt-3 w-full py-1 rounded text-sm transition
+                  className={`mt-3 w-full py-2 rounded text-sm transition
                   ${alreadyJoined || isFull
                     ? "bg-gray-600 cursor-not-allowed"
                     : joiningSlotId === slot.id
@@ -584,6 +659,7 @@ export default function WorkspaceDetails() {
                       : "bg-purple-600 hover:bg-purple-700"
                   }`}
                 >
+
                   {isFull
                     ? "Full"
                     : alreadyJoined
@@ -591,6 +667,7 @@ export default function WorkspaceDetails() {
                       : joiningSlotId === slot.id
                         ? "Joining..."
                         : "Join Slot"}
+
                 </button>
 
               </div>
@@ -602,9 +679,10 @@ export default function WorkspaceDetails() {
 
       {/* CREATE SLOT MODAL */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
 
-          <div className="w-[420px] p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+
+          <div className="w-full max-w-md p-5 sm:p-6 rounded-2xl bg-[#111827] border border-white/10">
 
             <h2 className="text-lg mb-4 font-medium">
               Create New Slot
@@ -612,6 +690,7 @@ export default function WorkspaceDetails() {
 
             {/* START TIME */}
             <div className="mb-3">
+
               <label className="text-xs text-gray-400">
                 Start Time
               </label>
@@ -626,10 +705,12 @@ export default function WorkspaceDetails() {
                   .slice(0, 16)}
                 className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
               />
+
             </div>
 
             {/* END TIME */}
             <div className="mb-3">
+
               <label className="text-xs text-gray-400">
                 End Time
               </label>
@@ -640,27 +721,31 @@ export default function WorkspaceDetails() {
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full mt-1 p-2 rounded bg-white/5 border border-white/10 text-white"
               />
+
             </div>
 
             {/* OPEN FOR JOIN */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-start gap-2 mb-4">
+
               <input
                 type="checkbox"
                 checked={openForJoin}
                 onChange={(e) => setOpenForJoin(e.target.checked)}
+                className="mt-1"
               />
 
               <label className="text-sm text-gray-300">
                 Allow others to join instantly
               </label>
+
             </div>
 
             {/* ACTIONS */}
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
 
               <button
                 onClick={() => setShowForm(false)}
-                className="text-gray-400"
+                className="w-full sm:w-auto text-gray-400 border border-white/10 rounded px-4 py-2"
               >
                 Cancel
               </button>
@@ -672,7 +757,7 @@ export default function WorkspaceDetails() {
                   !endTime ||
                   new Date(endTime) <= new Date(startTime)
                 }
-                className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded disabled:opacity-50"
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 rounded disabled:opacity-50"
               >
                 Book Slot
               </button>
@@ -680,8 +765,10 @@ export default function WorkspaceDetails() {
             </div>
 
           </div>
+
         </div>
       )}
+
     </DashboardLayout>
   )
 }
