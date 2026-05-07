@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { getSlots, createSlot } from "../api/slotService"
 import { motion } from "framer-motion"
+import { toast } from "sonner"
 
 export default function Slots() {
   const { id } = useParams()
@@ -26,8 +27,11 @@ export default function Slots() {
     try {
       const data = await getSlots(id)
       setSlots(data)
+
     } catch (err) {
       console.error(err)
+      toast.error("Failed to load slots")
+
     } finally {
       setLoading(false)
     }
@@ -43,11 +47,20 @@ export default function Slots() {
         capacity: Number(capacity)
       })
 
+      toast.success("Slot created successfully")
+
       fetchSlots()
       setShowCreate(false)
 
+      // reset fields
+      setDate("")
+      setStartTime("")
+      setEndTime("")
+      setCapacity("")
+
     } catch (err) {
       console.error("Slot create failed", err)
+      toast.error("Failed to create slot")
     }
   }
 
@@ -67,7 +80,11 @@ export default function Slots() {
               className="p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer"
             >
               <p>{slot.date}</p>
-              <p>{slot.startTime} - {slot.endTime}</p>
+
+              <p>
+                {slot.startTime} - {slot.endTime}
+              </p>
+
               <p className="text-sm text-gray-400">
                 Available: {slot.availableCapacity}
               </p>
@@ -97,28 +114,50 @@ export default function Slots() {
 
             <h2 className="mb-4 text-lg">Create Slot</h2>
 
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="block mb-2 p-2 w-full bg-white/5 border border-white/10" />
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="block mb-2 p-2 w-full bg-white/5 border border-white/10"
+            />
 
-            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-              className="block mb-2 p-2 w-full bg-white/5 border border-white/10" />
+            <input
+              type="time"
+              value={startTime}
+              onChange={e => setStartTime(e.target.value)}
+              className="block mb-2 p-2 w-full bg-white/5 border border-white/10"
+            />
 
-            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-              className="block mb-2 p-2 w-full bg-white/5 border border-white/10" />
+            <input
+              type="time"
+              value={endTime}
+              onChange={e => setEndTime(e.target.value)}
+              className="block mb-2 p-2 w-full bg-white/5 border border-white/10"
+            />
 
-            <input placeholder="Capacity" value={capacity}
+            <input
+              placeholder="Capacity"
+              value={capacity}
               onChange={e => setCapacity(e.target.value)}
-              className="block mb-4 p-2 w-full bg-white/5 border border-white/10" />
+              className="block mb-4 p-2 w-full bg-white/5 border border-white/10"
+            />
 
             <div className="flex justify-between">
-              <button onClick={() => setShowCreate(false)} className="text-gray-400">
+
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-gray-400"
+              >
                 Cancel
               </button>
 
-              <button onClick={handleCreateSlot}
-                className="bg-purple-600 px-4 py-2 rounded">
+              <button
+                onClick={handleCreateSlot}
+                className="bg-purple-600 px-4 py-2 rounded"
+              >
                 Create
               </button>
+
             </div>
 
           </div>

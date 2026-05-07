@@ -5,37 +5,52 @@ import Dashboard from "./pages/Dashboard"
 import Bookings from "./pages/Bookings"
 import ProtectedRoute from "./components/ProtectedRoute"
 import WorkspaceDetails from "./pages/WorkspaceDetails"
+import { Toaster } from "sonner";
 
 function App() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <>
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        expand={true}
+      />
 
-      {/* Protected Route */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/bookings"
-        element={
-          <ProtectedRoute>
-            <Bookings />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/workspace/:id" element={
-         <ProtectedRoute>
-            <WorkspaceDetails />
-          </ProtectedRoute>} 
-          />
-    </Routes>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Protected Route */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute>
+              <Bookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/workspace/:id"
+          element={
+            <ProtectedRoute>
+              <WorkspaceDetails />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
   )
 }
 

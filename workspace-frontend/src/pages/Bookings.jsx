@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { getMyBookings } from "../api/bookingService"
 import { cancelBooking } from "../api/workspaceService"
-import toast from "react-hot-toast"
+import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 
 export default function MyBookings() {

@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom"
 import { useState } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { bookWorkspace } from "../api/bookingService"
+import { toast } from "sonner"
 
 export default function Booking() {
   const { id } = useParams()
@@ -22,11 +23,11 @@ export default function Booking() {
         endTime
       })
 
-      alert("Booking successful ✅")
+      toast.success("Booking successful ✅")
 
     } catch (error) {
       console.error(error)
-      alert("Booking failed ❌ (slot may be taken)")
+      toast.error("Booking failed ❌ (slot may be taken)")
     } finally {
       setLoading(false)
     }

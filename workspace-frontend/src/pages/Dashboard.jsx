@@ -3,17 +3,19 @@ import DashboardLayout from "../components/DashboardLayout"
 import { getAllWorkspaces } from "../api/workspaceService"
 import { createWorkspace } from "../api/workspaceService"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [workspaces, setWorkspaces] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const [workspaces, setWorkspaces] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [locationFilter, setLocationFilter] = useState("Bangalore")
   const [allLocations, setAllLocations] = useState([])
   const [loadingLocations, setLoadingLocations] = useState(true)
 
-  //add new workspace
+  // add new workspace
   const [name, setName] = useState("")
   const [capacity, setCapacity] = useState("")
   const [workspaceLocation, setWorkspaceLocation] = useState("")
@@ -24,20 +26,20 @@ export default function Dashboard() {
 
   const [searchTerm, setSearchTerm] = useState("")
 
-
   const uniqueTypes = [
     "ALL",
     ...new Set(workspaces.map(ws => ws.type).filter(Boolean))
   ]
-const filteredWorkspaces = workspaces.filter((ws) => {
-  const matchesType =
-    typeFilter === "ALL" || ws.type === typeFilter
 
-  const matchesSearch =
-    ws.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredWorkspaces = workspaces.filter((ws) => {
+    const matchesType =
+      typeFilter === "ALL" || ws.type === typeFilter
 
-  return matchesType && matchesSearch
-})
+    const matchesSearch =
+      ws.name?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return matchesType && matchesSearch
+  })
 
   useEffect(() => {
     fetchWorkspaces()
@@ -48,9 +50,12 @@ const filteredWorkspaces = workspaces.filter((ws) => {
       const data = await getAllWorkspaces(
         locationFilter === "ALL" ? "" : locationFilter
       )
+
       setWorkspaces(data)
+
     } catch (error) {
       console.error(error)
+      toast.error("Failed to load workspaces")
     } finally {
       setLoading(false)
     }
@@ -73,6 +78,7 @@ const filteredWorkspaces = workspaces.filter((ws) => {
 
     } catch (error) {
       console.error("Failed to fetch locations", error)
+      toast.error("Failed to load locations")
     } finally {
       setLoadingLocations(false)
     }
@@ -91,6 +97,8 @@ const filteredWorkspaces = workspaces.filter((ws) => {
         type,
       })
 
+      toast.success("Workspace created successfully")
+
       // reset fields
       setName("")
       setCapacity("")
@@ -103,14 +111,13 @@ const filteredWorkspaces = workspaces.filter((ws) => {
 
     } catch (error) {
       console.error("Create failed", error)
+      toast.error("Failed to create workspace")
     }
   }
 
   return (
     <DashboardLayout>
       <h1 className="text-2xl mb-6">Available Workspaces</h1>
-
-
 
       <div className="flex justify-between items-end mb-6">
 
@@ -125,19 +132,23 @@ const filteredWorkspaces = workspaces.filter((ws) => {
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
               className={`
-          h-[40px] px-3
-          rounded-lg
-          bg-white/5 border border-white/10 text-white
-          focus:outline-none focus:ring-2 focus:ring-purple-500
-          appearance-none
-          ${loadingLocations ? "animate-pulse" : ""}
-        `}
+                h-[40px] px-3
+                rounded-lg
+                bg-white/5 border border-white/10 text-white
+                focus:outline-none focus:ring-2 focus:ring-purple-500
+                appearance-none
+                ${loadingLocations ? "animate-pulse" : ""}
+              `}
             >
               {loadingLocations ? (
                 <option>Loading...</option>
               ) : (
                 allLocations.map((loc) => (
-                  <option key={loc} value={loc} className="bg-black text-white">
+                  <option
+                    key={loc}
+                    value={loc}
+                    className="bg-black text-white"
+                  >
                     {loc}
                   </option>
                 ))
@@ -153,15 +164,19 @@ const filteredWorkspaces = workspaces.filter((ws) => {
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="
-          h-[40px] px-3
-          rounded-lg
-          bg-white/5 border border-white/10 text-white
-          focus:outline-none focus:ring-2 focus:ring-purple-500
-          appearance-none
-        "
+                h-[40px] px-3
+                rounded-lg
+                bg-white/5 border border-white/10 text-white
+                focus:outline-none focus:ring-2 focus:ring-purple-500
+                appearance-none
+              "
             >
               {uniqueTypes.map((t) => (
-                <option key={t} value={t} className="bg-black text-white">
+                <option
+                  key={t}
+                  value={t}
+                  className="bg-black text-white"
+                >
                   {t}
                 </option>
               ))}
@@ -170,7 +185,9 @@ const filteredWorkspaces = workspaces.filter((ws) => {
 
           {/* Search */}
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1 opacity-0">Search</label>
+            <label className="text-xs text-gray-400 mb-1 opacity-0">
+              Search
+            </label>
 
             <input
               type="text"
@@ -178,15 +195,16 @@ const filteredWorkspaces = workspaces.filter((ws) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="
-          h-[40px] px-4
-          rounded-full
-          bg-white/5 border border-white/10
-          text-white w-[750px]
-          focus:outline-none focus:ring-2 focus:ring-purple-500
-          placeholder-gray-400
-        "
+                h-[40px] px-4
+                rounded-full
+                bg-white/5 border border-white/10
+                text-white w-[750px]
+                focus:outline-none focus:ring-2 focus:ring-purple-500
+                placeholder-gray-400
+              "
             />
           </div>
+
           {/* Button */}
           <button
             onClick={() => setShowCreateModal(true)}
@@ -197,25 +215,28 @@ const filteredWorkspaces = workspaces.filter((ws) => {
 
         </div>
 
-
-
       </div>
+
       {loading ? (
         <p>Loading...</p>
       ) : (
         <div className="grid grid-cols-3 gap-6">
+
           {filteredWorkspaces.map((ws) => (
             <div
               key={ws.id}
               className="p-4 bg-white/5 border border-white/10 rounded-xl"
             >
               <h2 className="text-lg">{ws.name}</h2>
+
               <p className="text-sm text-gray-400">
                 Capacity: {ws.capacity}
               </p>
+
               <p className="text-sm text-gray-400">
                 Type: {ws.type}
               </p>
+
               <button
                 onClick={() => navigate(`/workspace/${ws.id}`)}
                 className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm"
@@ -224,9 +245,10 @@ const filteredWorkspaces = workspaces.filter((ws) => {
               </button>
             </div>
           ))}
-        </div>
 
+        </div>
       )}
+
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
 

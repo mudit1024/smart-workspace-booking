@@ -8,6 +8,7 @@ import { Link } from "react-router-dom"
 import AuthLayout from "../components/AuthLayout"
 import { loginUser } from "../api/authService"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -24,7 +25,7 @@ export default function Login() {
       localStorage.setItem("token", data.accessToken)
       localStorage.setItem("refreshToken", data.refreshToken)
 
-      // 👤 user info (IMPORTANT FIX)
+      // 👤 user info
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -34,10 +35,13 @@ export default function Login() {
         })
       )
 
+      toast.success("Login successful")
+
       navigate("/dashboard")
 
     } catch (error) {
-      alert("Login failed")
+      console.error(error)
+      toast.error("Login failed")
     }
   }
 
@@ -50,6 +54,7 @@ export default function Login() {
           <CardTitle className="text-center text-2xl font-light tracking-wide">
             Smart Workspace
           </CardTitle>
+
           <p className="text-center text-sm text-gray-400">
             Access your workspace dashboard
           </p>
@@ -60,6 +65,7 @@ export default function Login() {
 
             <div className="space-y-2">
               <Label>Email</Label>
+
               <Input
                 className="bg-white/5 border-white/10 focus:border-purple-500"
                 value={email}
@@ -70,6 +76,7 @@ export default function Login() {
 
             <div className="space-y-2">
               <Label>Password</Label>
+
               <Input
                 type="password"
                 className="bg-white/5 border-white/10 focus:border-purple-500"

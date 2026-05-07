@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Link } from "react-router-dom"
 import AuthLayout from "../components/AuthLayout"
 import { registerUser } from "../api/authService"
+import { toast } from "sonner"
 
 export default function Register() {
   const [name, setName] = useState("")
@@ -20,10 +21,11 @@ export default function Register() {
 
       console.log("Register success:", data)
 
-      alert("Account created! Please login.")
+      toast.success("Account created! Please login.")
+
     } catch (error) {
       console.error("Register failed:", error)
-      alert("Registration failed")
+      toast.error("Registration failed")
     }
   }
 
@@ -36,6 +38,7 @@ export default function Register() {
           <CardTitle className="text-center text-2xl font-light">
             Create Account
           </CardTitle>
+
           <p className="text-center text-sm text-gray-400">
             Join Smart Workspace System
           </p>
@@ -46,6 +49,7 @@ export default function Register() {
 
             <div className="space-y-2">
               <Label>Name</Label>
+
               <Input
                 className="bg-white/5 border-white/10 focus:border-purple-500"
                 value={name}
@@ -56,6 +60,7 @@ export default function Register() {
 
             <div className="space-y-2">
               <Label>Email</Label>
+
               <Input
                 className="bg-white/5 border-white/10 focus:border-purple-500"
                 value={email}
@@ -65,6 +70,7 @@ export default function Register() {
 
             <div className="space-y-2">
               <Label>Password</Label>
+
               <Input
                 type="password"
                 className="bg-white/5 border-white/10 focus:border-purple-500"
