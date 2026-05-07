@@ -1,43 +1,103 @@
 package com.app.auth_service.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // =========================
+    // VALIDATION ERRORS
+    // =========================
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(
-            MethodArgumentNotValidException ex) {
+    public ResponseEntity<?> handleValidationErrors(
+            MethodArgumentNotValidException ex
+    ) {
 
         Map<String, String> errors = new HashMap<>();
 
-        ex.getBindingResult().getFieldErrors()
-                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
 
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+            errors.put(
+                    error.getField(),
+                    error.getDefaultMessage()
+            );
+        }
+
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 400,
+                        "error", "VALIDATION_FAILED",
+                        "messages", errors
+                )
+        );
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
+    // =========================
+    // DUPLICATE / DB ERRORS
+    // =========================
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDatabaseErrors(
+            DataIntegrityViolationException ex
+    ) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        String message = "Database error";
 
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        if (ex.getMessage().contains("email")) {
+            message = "Account already exists with this email";
+        }
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 409,
+                        "error", "DATABASE_ERROR",
+                        "message", message
+                )
+        );
     }
 
+    // =========================
+    // CUSTOM BUSINESS ERRORS
+    // =========================
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+    public ResponseEntity<?> handleRuntime(RuntimeException ex) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 400,
+                        "error", "BAD_REQUEST",
+                        "message", ex.getMessage()
+                )
+        );
+    }
 
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    // =========================
+    // FALLBACK ERROR
+    // =========================
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneric(Exception ex) {
+
+        ex.printStackTrace();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 500,
+                        "error", "INTERNAL_SERVER_ERROR",
+                        "message", "Something went wrong"
+                )
+        );
     }
 }
