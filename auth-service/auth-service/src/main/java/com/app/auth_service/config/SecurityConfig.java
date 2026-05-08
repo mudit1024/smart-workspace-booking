@@ -29,6 +29,9 @@ public class SecurityConfig {
                 .cors(cors -> {})
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
                         "/ping").permitAll()
                 .anyRequest().authenticated()
             )
